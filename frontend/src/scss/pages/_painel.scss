@@ -1,0 +1,200 @@
+// ============================================================
+//  pages/_painel.scss — Painel principal (dashboard)
+//  origem: painel.css  · botões via componente (omitidos aqui)
+// ============================================================
+@use '../abstracts' as *;
+
+.dash { @include page-shell(22px); }
+
+.dash-welcome {
+  @include page-header;
+  h1 { @include page-h1; }
+}
+.greet-eyebrow { @include eyebrow; margin-bottom: 6px; }
+.dash-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
+// ---------- KPIs ----------
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.stat {
+  @include card;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+
+  &:hover { border-color: var(--brand-line); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+}
+.stat-top { display: flex; align-items: center; justify-content: space-between; }
+.stat-ico {
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-md);
+  background: var(--brand-soft);
+  i { color: var(--brand-strong); font-size: 18px; padding: 0; }
+}
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.stat-value {
+  font-family: var(--font-data);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: var(--text);
+  line-height: 1;
+}
+.stat-foot { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
+.trend {
+  display: inline-flex; align-items: center; gap: 3px; font-weight: 700;
+  i { padding: 0; font-size: 13px; }
+  &.up,   &.up i   { color: var(--success); }
+  &.down, &.down i { color: var(--danger); }
+}
+.stat-sub { color: var(--text-dim); }
+
+// ---------- Grade de painéis ----------
+.panel-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+.panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+  h2 { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--text); }
+}
+.panel-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.panel-body { padding: 20px; flex: 1; }
+
+// ---------- Gráfico de barras (CSS puro) ----------
+.bars { display: flex; align-items: flex-end; gap: 12px; height: 210px; }
+.bar-col {
+  flex: 1; height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 10px;
+
+  &.peak .bar { background: linear-gradient(180deg, var(--brand-amber), var(--brand)); }
+  &.peak .bar::after {
+    content: attr(data-val);
+    position: absolute;
+    top: -22px; left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-data);
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--brand-strong);
+    white-space: nowrap;
+  }
+}
+.bar-track { width: 100%; max-width: 40px; flex: 1; display: flex; align-items: flex-end; }
+.bar {
+  width: 100%;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  background: linear-gradient(180deg, var(--brand), var(--brand-strong));
+  transition: height .6s var(--ease);
+  position: relative;
+}
+.bar-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+// ---------- Próximos serviços ----------
+.sched { display: flex; flex-direction: column; }
+.sched-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+
+  &:first-child { padding-top: 0; }
+  &:last-child { border-bottom: none; padding-bottom: 0; }
+}
+.sched-day {
+  flex-shrink: 0;
+  width: 46px;
+  text-align: center;
+  border-right: 1px solid var(--line);
+  padding-right: 12px;
+
+  .d { display: block; font-family: var(--font-data); font-size: 19px; font-weight: 800; color: var(--text); line-height: 1; }
+  .m { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; color: var(--text-dim); }
+}
+.sched-info {
+  flex: 1; min-width: 0;
+  .t { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .c { font-size: 12.5px; color: var(--text-muted); }
+}
+.sched-badge {
+  flex-shrink: 0;
+  padding: 4px 9px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: 700;
+
+  &.ok   { background: var(--success-soft); color: var(--success); }
+  &.wait { background: var(--warning-soft); color: var(--warning); }
+}
+
+// ---------- Atalhos ----------
+.quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.quick-link {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+
+  &:hover { border-color: var(--brand-line); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  i.go { margin-left: auto; color: var(--text-dim); padding: 0; }
+}
+.quick-ico {
+  width: 44px; height: 44px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--brand-amber), var(--brand-strong));
+  i { color: #fff; font-size: 20px; padding: 0; }
+}
+.quick-tt {
+  strong { display: block; font-size: 15px; font-weight: 700; }
+  span { font-size: 12.5px; color: var(--text-muted); }
+}
+
+// ---------- Responsivo ----------
+@include respond('lg') { .panel-grid { grid-template-columns: 1fr; } }
+@include respond(900px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
+@include respond('md') {
+  .dash { padding: 20px 16px 56px; gap: 18px; }
+  .dash-welcome h1 { font-size: 1.55rem; }
+  .quick { grid-template-columns: 1fr; }
+  .stat-value { font-size: 26px; }
+  .bars { height: 170px; }
+}
+@include respond(380px) {
+  .stat-row { grid-template-columns: 1fr; }
+  .dash-actions { width: 100%; }
+  .dash-actions .btn-solid,
+  .dash-actions .btn-ghost { flex: 1; justify-content: center; }
+}

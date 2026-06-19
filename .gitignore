@@ -1,0 +1,45 @@
+# ===== JC Elétrica & Solar — .gitignore (front Vercel + backend Express/TS) =====
+
+# ---- Segredos / ambiente (NUNCA versionar) ----
+.env
+.env.*
+!.env.example
+*.pem
+
+# ---- Node ----
+node_modules/
+npm-debug.log*
+yarn-error.log*
+yarn-debug.log*
+pnpm-debug.log*
+.npm/
+
+# ---- Build TypeScript ----
+dist/
+build/
+*.tsbuildinfo
+
+# ---- SASS (front) ----
+.sass-cache/
+# Os app.css/login.css COMPILADOS são versionados (deploy estático na Vercel).
+# Ignoramos só os source maps:
+*.css.map
+
+# ---- Vercel ----
+.vercel
+
+# ---- Banco local (se usar SQLite em testes) ----
+*.db
+*.sqlite
+*.sqlite3
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- Editores / SO ----
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

@@ -1,0 +1,33 @@
+// ============================================================
+//  components/_badges.scss — pills de status + tags (consolidado)
+// ============================================================
+@use '../abstracts' as *;
+
+// Pills de status (.st + modificador) — unifica Fluxo e Funcionários
+.st {
+  @include status-pill;
+
+  &.pago,
+  &.ativo     { background: var(--success-soft); color: var(--success); }
+  &.pendente,
+  &.afastado  { background: var(--warning-soft); color: var(--warning); }
+  &.agendado,
+  &.ferias    { background: var(--brand-soft);   color: var(--brand-strong); }
+  &.cancelado { background: var(--danger-soft);  color: var(--danger); }
+  &.inativo   { background: var(--surface-2);    color: var(--text-dim); }
+}
+
+// Tags genéricas (categoria, setor, etc.)
+.tag-cat,
+.hr-tag,
+.rep-tag,
+.kb-tag {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}

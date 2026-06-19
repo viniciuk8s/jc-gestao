@@ -1,0 +1,107 @@
+// ============================================================
+//  abstracts/_variables.scss — Design tokens
+//  Tokens ficam como CSS custom properties (tema em runtime).
+//  Variáveis SCSS ($) só para o que é usado em build (breakpoints).
+// ============================================================
+
+:root {
+
+  // ---------- Marca (laranja, com rampa de profundidade) ----------
+  --brand:        #F97316;
+  --brand-strong: #EF6A01;
+  --brand-dark:   #C2560B;
+  --brand-amber:  #FB9A45;
+  --brand-soft:   rgba(239, 106, 1, .10);
+  --brand-softer: rgba(239, 106, 1, .05);
+  --brand-glow:   rgba(239, 106, 1, .35);
+  --brand-line:   rgba(239, 106, 1, .40);
+
+  // ---------- Fundo ----------
+  --bg-0: #FFFFFF;
+  --bg-1: #F7F8FB;
+  --bg-2: #EEF1F7;
+  --bg-atmosphere:
+    radial-gradient(circle at top right,   rgba(239,106,1,.045), transparent 520px),
+    radial-gradient(circle at bottom left, rgba(239,106,1,.03),  transparent 520px),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1), var(--bg-2));
+
+  // ---------- Superfícies ----------
+  --surface:       #FFFFFF;
+  --surface-2:     #F4F6FB;
+  --surface-3:     #FAFBFD;
+  --surface-solid: #FFFFFF;
+
+  // ---------- Texto ----------
+  --text:       #131A2B;
+  --text-muted: #5A6478;
+  --text-dim:   #8A93A6;
+
+  // ---------- Bordas ----------
+  --border:        rgba(19, 26, 43, .10);
+  --border-strong: rgba(19, 26, 43, .16);
+  --line:          #E6E9F0;
+
+  // ---------- Status ----------
+  --success: #16A34A; --success-soft: rgba(22, 163, 74, .12);
+  --danger:  #DC2626; --danger-soft:  rgba(220, 38, 38, .10);
+  --warning: #D97706; --warning-soft: rgba(217, 119, 6, .12);
+
+  // ---------- Raios ----------
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 8px;
+  --r-xl: 12px;
+  --r-full: 9999px;
+
+  // ---------- Sombras ----------
+  --shadow-sm:   0 1px 2px rgba(19, 26, 43, .06);
+  --shadow-md:   0 4px 16px rgba(19, 26, 43, .08);
+  --shadow-lg:   0 12px 32px rgba(19, 26, 43, .12);
+  --shadow-glow: 0 8px 24px var(--brand-glow);
+
+  // ---------- Tipografia ----------
+  --font-display: 'Syne', 'Inter', sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-data:    'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  // ---------- Layout ----------
+  --sidebar-w:           300px;
+  --sidebar-w-collapsed: 84px;
+  --content-max:         1400px;
+
+  // ---------- Movimento ----------
+  --ease:        cubic-bezier(.4, 0, .2, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --transition:  .2s var(--ease);
+
+  // ---------- Z-index ----------
+  --z-sidebar: 50;
+  --z-overlay: 45;
+  --z-topbar:  60;
+  --z-modal:   9999;
+  --z-toast:   10000;
+
+  // ---------- Aliases ----------
+  --primary:       var(--brand-strong);
+  --secondary:     var(--text-dim);
+  --border-card:   var(--brand-line);
+  --border-radius: var(--r-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// ---------- Breakpoints (SCSS, usados pelo mixin respond) ----------
+$breakpoints: (
+  'sm': 480px,
+  'md': 768px,
+  'lg': 1024px,
+  'xl': 1280px,
+);

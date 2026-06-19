@@ -1,0 +1,138 @@
+// ============================================================
+//  pages/_fluxo.scss — Fluxo de Caixa
+//  origem: fluxo.css · botões/badges/tag-cat/form-error vêm de componentes
+// ============================================================
+@use '../abstracts' as *;
+
+.cashflow { @include page-shell; }
+
+.cf-header {
+  @include page-header;
+  h1 { @include page-h1; }
+}
+.cf-eyebrow { @include eyebrow; margin-bottom: 6px; }
+.cf-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
+// ---------- Toolbar ----------
+.cf-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+}
+.cf-segment {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+
+  button {
+    border: none;
+    background: none;
+    padding: 8px 14px;
+    border-radius: var(--r-sm);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition);
+
+    &.active { background: var(--surface); color: var(--brand-strong); box-shadow: var(--shadow-sm); }
+  }
+}
+.cf-filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cf-select { @include select-base(40px); }
+.cf-search {
+  @include search-box(40px);
+  input { width: 220px; }
+}
+
+// ---------- Resumo do período ----------
+.cf-summary { @include summary-strip; }
+.cf-sum {
+  background: var(--surface);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .l {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .v {
+    font-family: var(--font-data);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -.01em;
+    color: var(--text);
+    line-height: 1;
+  }
+  &.in  .v { color: var(--success); }
+  &.out .v { color: var(--danger); }
+  &.net .v.neg { color: var(--danger); }
+  &.net .v.pos { color: var(--success); }
+}
+
+// ---------- Livro-caixa (tabela) ----------
+.cf-table-meta {
+  font-size: 13px;
+  color: var(--text-muted);
+  b { color: var(--text); font-weight: 700; }
+}
+.cf-table {
+  th, td { white-space: nowrap; }
+  td { padding: 14px 16px; font-size: 13.5px; }
+  .num { text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+  th.num { text-align: right; }
+  .desc { white-space: normal; min-width: 220px; color: var(--text); font-weight: 600; }
+}
+
+.forma { color: var(--text-muted); font-size: 13px; }
+.val.in  { color: var(--success); font-weight: 700; }
+.val.out { color: var(--danger);  font-weight: 700; }
+.saldo { font-weight: 700; color: var(--text); }
+.saldo.neg { color: var(--danger); }
+.saldo.na { color: var(--text-dim); font-weight: 500; }
+
+.row-del {
+  width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+
+  i { padding: 0; color: inherit; }
+  &:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-soft); }
+}
+
+.cf-empty {
+  text-align: center;
+  padding: 54px 20px;
+  .ico { font-size: 2.2rem; color: var(--text-dim); }
+  p { margin-top: 10px; color: var(--text-muted); font-size: .92rem; }
+}
+
+// ---------- Responsivo ----------
+@include respond('md') {
+  .cashflow { padding: 20px 16px 56px; gap: 16px; }
+  .cf-header h1 { font-size: 1.55rem; }
+  .cf-summary { grid-template-columns: repeat(2, 1fr); }
+  .cf-toolbar { gap: 10px; }
+  .cf-search { flex: 1; min-width: 160px; }
+  .cf-search input { width: 100%; }
+  .cf-sum .v { font-size: 19px; }
+}
+@include respond(420px) {
+  .cf-segment { width: 100%; justify-content: space-between; }
+  .cf-segment button { flex: 1; padding: 8px 6px; }
+  .cf-filters { width: 100%; }
+  .cf-select { flex: 1; }
+}

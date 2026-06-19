@@ -1,0 +1,211 @@
+// ============================================================
+//  abstracts/_mixins.scss — utilitários e componentes-base
+// ============================================================
+@use 'sass:map';
+@use 'variables' as *;
+
+// ---------- Media queries ----------
+// Uso: @include respond('md') { ... }  ou  @include respond(900px) { ... }
+@mixin respond($bp) {
+  @if map.has-key($breakpoints, $bp) {
+    @media (max-width: map.get($breakpoints, $bp)) { @content; }
+  } @else {
+    @media (max-width: $bp) { @content; }
+  }
+}
+
+// ---------- Cartão padrão ----------
+@mixin card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+// ---------- Botões (antes copiados em 5 arquivos) ----------
+@mixin btn-base {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: var(--r-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--transition), border-color var(--transition),
+              transform var(--transition), box-shadow var(--transition), color var(--transition);
+}
+@mixin btn-solid {
+  @include btn-base;
+  border: none;
+  background: var(--brand-strong);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+  &:hover { background: var(--brand-dark); transform: translateY(-1px); box-shadow: var(--shadow-glow); }
+  i { color: #fff; padding: 0; }
+}
+@mixin btn-ghost {
+  @include btn-base;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  &:hover { border-color: var(--brand-line); color: var(--brand-strong); }
+  i { color: inherit; padding: 0; }
+}
+
+// ---------- Setinha dos <select> ----------
+@mixin select-arrow {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%235A6478' d='M8 10.5l-4-4h8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+}
+
+// ---------- Foco de campos ----------
+@mixin field-focus {
+  border-color: var(--brand-line);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+// ---------- Pill de status ----------
+@mixin status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: 700;
+  &::before { content: ""; width: 6px; height: 6px; border-radius: var(--r-full); background: currentColor; }
+}
+
+// ---------- Eyebrow (rótulo mono em maiúsculas) ----------
+@mixin eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+// ---------- Media query mínima (desktop-up) ----------
+// Uso: @include respond-min('lg') { ... }  ou  @include respond-min(1024px) { ... }
+@mixin respond-min($bp) {
+  @if map.has-key($breakpoints, $bp) {
+    @media (min-width: map.get($breakpoints, $bp)) { @content; }
+  } @else {
+    @media (min-width: $bp) { @content; }
+  }
+}
+
+// ============================================================
+//  Mixins de PÁGINA (dedup dos wrappers/cabeçalhos repetidos)
+// ============================================================
+
+// Wrapper de página (.cashflow / .hr / .pj / .rel / .dash)
+@mixin page-shell($gap: 20px) {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 28px 28px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: $gap;
+}
+
+// Cabeçalho de página (título à esquerda, ações à direita)
+@mixin page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+// h1 das páginas
+@mixin page-h1 {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--text);
+  line-height: 1.05;
+}
+
+// Faixa-resumo dividida por hairline (gap:1px sobre --line)
+@mixin summary-strip($radius: var(--r-lg)) {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--border);
+  border-radius: $radius;
+  overflow: hidden;
+}
+
+// Campo de busca com ícone à esquerda
+@mixin search-box($height: 42px) {
+  position: relative;
+
+  i {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    padding: 0;
+    font-size: 15px;
+  }
+  input {
+    width: 100%;
+    height: $height;
+    padding: 0 12px 0 36px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+
+    &:focus { @include field-focus; }
+  }
+}
+
+// Select estilizado (triângulo via select-arrow)
+@mixin select-base($height: 42px) {
+  height: $height;
+  padding: 0 34px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  @include select-arrow;
+}
+
+// Botão-ícone (estava duplicado em funcionarios/projetos)
+@mixin icon-btn($size: 34px) {
+  width: $size;
+  height: $size;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+
+  i { padding: 0; color: inherit; font-size: 15px; }
+  &:hover { border-color: var(--brand-line); color: var(--brand-strong); }
+  &.danger:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-soft); }
+}

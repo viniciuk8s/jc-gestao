@@ -1,0 +1,34 @@
+// ============================================================
+//  layout/_main.scss — área de conteúdo principal
+//  Consolida o .main-content que antes estava repetido em
+//  styles.css, main.css, sidebar.css e mobile.css.
+// ============================================================
+@use '../abstracts' as *;
+
+.main-content {
+  min-height: 100vh;
+  color: var(--text);
+  background-color: transparent;   // o fundo vem do body (--bg-atmosphere)
+  overflow-x: hidden;
+
+  // Desktop: abre espaço para a sidebar fixa
+  @include respond-min('lg') {
+    margin-left: var(--sidebar-w);
+  }
+  // (mobile: margin-left 0 é o padrão; padding-top do topbar fica em _topbar)
+}
+
+// Placeholder de conteúdo (telas em construção)
+.content-placeholder { text-align: center; padding: 20px; }
+.placeholder-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .2em;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+.placeholder-text {
+  font-size: 14px;
+  color: var(--text-muted);
+}

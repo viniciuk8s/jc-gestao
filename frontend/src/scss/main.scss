@@ -1,0 +1,33 @@
+// ============================================================
+//  main.scss — manifesto do app  →  compila para css/app.css
+//  sass --watch src/scss/main.scss:src/css/app.css --style=compressed
+// ============================================================
+
+// 1) Fundação (tokens primeiro: emite o :root)
+@use 'abstracts' as *;
+
+// 2) Base
+@use 'base/reset';
+@use 'base/base';
+
+// 3) Layout
+@use 'layout/main';
+@use 'layout/sidebar';
+@use 'layout/topbar';
+
+// 4) Componentes
+@use 'components/buttons';
+@use 'components/icon-btn';
+@use 'components/badges';
+@use 'components/forms';
+@use 'components/dropdown';
+@use 'components/modal';
+@use 'components/table';
+
+// 5) Páginas
+@use 'pages/painel';
+@use 'pages/fluxo';
+@use 'pages/funcionarios';
+@use 'pages/projetos';
+@use 'pages/relatorios';
+@use 'pages/agenda';

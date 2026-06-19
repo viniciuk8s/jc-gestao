@@ -1,0 +1,4 @@
+// Encaminha tokens e mixins para um único ponto de entrada.
+// Nos parciais: @use '../abstracts' as *;
+@forward 'variables';
+@forward 'mixins';

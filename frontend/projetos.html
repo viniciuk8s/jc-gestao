@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#172E45">
+  <meta name="description" content="Gestão de projetos da JC Elétrica &amp; Solar.">
+    <title>Projetos — JC Elétrica &amp; Solar</title>
+
+  <!-- Fontes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Ícones -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+  <link rel="stylesheet" href="src/css/app.css">
+
+ <!-- Supabase (CDN) + proteção de sessão -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="src/js/supabase.js"></script>
+  <script defer src="src/js/config.js"></script>
+  <script defer src="src/js/api.js"></script>
+  <script defer src="src/js/auth-guard.js"></script>
+  <script defer src="src/js/layout.js"></script>
+  <script defer src="src/js/sidebar.js"></script>
+  <script defer src="src/js/dropdown.js"></script>
+  <!-- utilitários compartilhados + UI (toast/confirm) -->
+  <script defer src="src/js/utils.js"></script>
+  <script defer src="src/js/ui.js"></script>
+  <script defer src="src/js/modal.js"></script>
+  <script defer src="src/js/projetos.js"></script>
+
+
+</head>
+
+<body data-page="projetos">
+
+
+  <main class="main-content">
+
+    <div class="pj">
+
+      <!-- Cabeçalho -->
+      <div class="pj-header">
+        <div>
+          <div class="pj-eyebrow">Gestão de projetos</div>
+          <h1>Projetos</h1>
+        </div>
+        <div class="pj-actions">
+          <button type="button" class="btn-ghost" id="pj-export"><i class="bi bi-download" aria-hidden="true"></i> Exportar CSV</button>
+          <button type="button" class="btn-solid" id="pj-add"><i class="bi bi-plus-lg" aria-hidden="true"></i> Novo projeto</button>
+        </div>
+      </div>
+
+      <!-- Barra de ferramentas -->
+      <div class="pj-toolbar">
+        <div class="pj-search">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input type="text" id="pj-busca" aria-label="Buscar projetos" placeholder="Buscar projeto ou cliente...">
+        </div>
+        <div class="pj-filters">
+          <select class="pj-select" id="pj-setor">
+            <option value="todos">Todos os setores</option>
+            <option value="Elétrica">Elétrica</option>
+            <option value="Solar">Solar</option>
+            <option value="Administrativo">Administrativo</option>
+            <option value="Comercial">Comercial</option>
+          </select>
+          <select class="pj-select" id="pj-prio">
+            <option value="todos">Todas as prioridades</option>
+            <option value="alta">Alta</option>
+            <option value="media">Média</option>
+            <option value="baixa">Baixa</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Quadro Kanban -->
+      <div class="kanban" id="kanban">
+
+        <div class="kb-col" data-status="planejamento">
+          <div class="kb-col-head">
+            <span class="kb-dot planejamento"></span>
+            <h2>Planejamento</h2>
+            <span class="kb-count" id="cnt-planejamento">0</span>
+          </div>
+          <div class="kb-body" id="col-planejamento" data-status="planejamento"></div>
+        </div>
+
+        <div class="kb-col" data-status="andamento">
+          <div class="kb-col-head">
+            <span class="kb-dot andamento"></span>
+            <h2>Em execução</h2>
+            <span class="kb-count" id="cnt-andamento">0</span>
+          </div>
+          <div class="kb-body" id="col-andamento" data-status="andamento"></div>
+        </div>
+
+        <div class="kb-col" data-status="revisao">
+          <div class="kb-col-head">
+            <span class="kb-dot revisao"></span>
+            <h2>Em revisão</h2>
+            <span class="kb-count" id="cnt-revisao">0</span>
+          </div>
+          <div class="kb-body" id="col-revisao" data-status="revisao"></div>
+        </div>
+
+        <div class="kb-col" data-status="concluido">
+          <div class="kb-col-head">
+            <span class="kb-dot concluido"></span>
+            <h2>Concluído</h2>
+            <span class="kb-count" id="cnt-concluido">0</span>
+          </div>
+          <div class="kb-body" id="col-concluido" data-status="concluido"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modern-modal" role="dialog" aria-modal="true" aria-labelledby="pj-modal-title">
+
+        <div class="modal-header">
+          <div class="modal-title">
+            <h2 id="pj-modal-title">Novo projeto</h2>
+            <p>Defina os dados, o prazo e quem está envolvido</p>
+          </div>
+          <button type="button" class="close-btn" onclick="closeModal()" aria-label="Fechar"><i class="ti ti-x" aria-hidden="true"></i></button>
+        </div>
+
+        <form class="modal-form" id="pj-form">
+          <input type="hidden" id="pf-id">
+          <div class="form-grid">
+
+            <div class="input-group full">
+              <label for="pf-nome">Nome do projeto</label>
+              <input type="text" id="pf-nome" placeholder="Ex: Usina solar — Galpão Industrial" autocomplete="off">
+            </div>
+
+            <div class="input-group">
+              <label for="pf-cliente">Cliente</label>
+              <input type="text" id="pf-cliente" placeholder="Ex: Indústria Norte" autocomplete="off">
+            </div>
+
+            <div class="input-group">
+              <label for="pf-setor">Setor</label>
+              <select id="pf-setor">
+                <option>Elétrica</option>
+                <option>Solar</option>
+                <option>Administrativo</option>
+                <option>Comercial</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label for="pf-status">Status</label>
+              <select id="pf-status">
+                <option value="planejamento">Planejamento</option>
+                <option value="andamento">Em execução</option>
+                <option value="revisao">Em revisão</option>
+                <option value="concluido">Concluído</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label for="pf-prio">Prioridade</label>
+              <select id="pf-prio">
+                <option value="baixa">Baixa</option>
+                <option value="media">Média</option>
+                <option value="alta">Alta</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label for="pf-entrega">Data de entrega</label>
+              <input type="date" id="pf-entrega">
+              <small class="field-hint">Deixe em branco para “sem prazo”.</small>
+            </div>
+
+            <div class="input-group">
+              <label for="pf-prog">Progresso: <span id="pf-prog-val">0%</span></label>
+              <input type="range" id="pf-prog" min="0" max="100" step="5" value="0" class="range">
+            </div>
+
+            <div class="input-group full">
+              <label>Funcionários envolvidos</label>
+              <div class="chips-pick" id="pf-funcs"></div>
+            </div>
+
+            <div class="input-group full">
+              <label>Terceiros envolvidos</label>
+              <div class="chip-add">
+                <input type="text" id="pf-terc-input" placeholder="Nome do terceiro / empresa parceira">
+                <button type="button" class="btn-mini" id="pf-terc-btn"><i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar</button>
+              </div>
+              <div class="chips" id="pf-terceiros"></div>
+            </div>
+
+            <div class="input-group full">
+              <label for="pf-desc">Descrição</label>
+              <textarea id="pf-desc" rows="3" placeholder="Escopo, observações..."></textarea>
+            </div>
+
+            <div class="input-group full">
+              <p class="form-error" id="pf-error"></p>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+            <button type="submit" class="btn-save">Salvar projeto</button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+  </main>
+   
+
+</body>
+</html>

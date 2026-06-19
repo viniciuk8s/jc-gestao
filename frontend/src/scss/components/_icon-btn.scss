@@ -1,0 +1,9 @@
+// ============================================================
+//  components/_icon-btn.scss — botão-ícone (consolidado)
+//  Base 34px. Projetos usa 28px no kanban (override no _projetos).
+//  NOTA: assume o hover de "ação de card" (borda brand-line). O hover
+//  antigo do dropdown (surface-2) foi descontinuado por consistência.
+// ============================================================
+@use '../abstracts' as *;
+
+.icon-btn { @include icon-btn; }

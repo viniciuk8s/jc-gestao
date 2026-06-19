@@ -1,0 +1,230 @@
+// ============================================================
+//  components/_modal.scss — modal de registro (form em grid)
+//  origem: modal.css
+// ============================================================
+@use '../abstracts' as *;
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(19, 26, 43, .5);
+  backdrop-filter: blur(12px);
+  opacity: 0;
+  visibility: hidden;
+  transition: .35s ease;
+
+  &.active { opacity: 1; visibility: visible; }
+  &.active .modern-modal { transform: translateY(0) scale(1); }
+}
+
+.modern-modal {
+  position: relative;
+  width: 960px;
+  max-width: 100%;
+  max-height: 95vh;
+  overflow: hidden auto;
+  padding: 34px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(40px) scale(.96);
+  transition: transform .35s ease;
+
+  // glow solar
+  &::before {
+    content: "";
+    position: absolute;
+    top: -120px;
+    right: -120px;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: var(--brand-glow);
+    filter: blur(45px);
+    opacity: .22;
+    pointer-events: none;
+  }
+
+  &::-webkit-scrollbar { width: 7px; }
+}
+
+// ---------- Header ----------
+.modal-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 32px;
+}
+
+.modal-title {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  p { color: var(--text-muted); font-size: 15px; }
+}
+
+.close-btn {
+  min-width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: .3s;
+
+  &:hover { background: var(--brand-strong); color: #fff; transform: rotate(90deg); }
+  i { color: inherit; }
+}
+
+// ---------- Form ----------
+.modal-form { position: relative; z-index: 2; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px;
+}
+.full { grid-column: 1 / -1; }
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  label {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-3);
+    color: var(--text);
+    font-size: 15px;
+    outline: none;
+    transition: .3s;
+  }
+  input,
+  select { height: 58px; }
+  textarea { min-height: 130px; resize: none; }
+
+  input::placeholder,
+  textarea::placeholder { color: var(--text-dim); }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--brand-line);
+    background: var(--brand-softer);
+    box-shadow: 0 0 0 4px var(--brand-soft);
+  }
+
+  // chevron próprio (diferente do triângulo das selects de página)
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg fill='%235A6478' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 7l4.5 5 4.5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 16px;
+  }
+  select option { background: var(--surface-solid); color: var(--text); }
+}
+
+// ---------- Footer ----------
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  margin-top: 34px;
+}
+
+.btn-cancel,
+.btn-save {
+  height: 56px;
+  padding: 0 26px;
+  border: none;
+  border-radius: var(--r-md);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .3s;
+}
+.btn-cancel {
+  background: var(--surface-2);
+  color: var(--text);
+  &:hover { background: var(--surface); }
+}
+.btn-save {
+  background: linear-gradient(135deg, var(--brand-amber), var(--brand-strong));
+  color: #fff;
+  box-shadow: 0 12px 30px var(--brand-glow);
+  &:hover { transform: translateY(-3px); box-shadow: var(--shadow-glow); }
+}
+
+// ---------- Responsivo ----------
+@include respond(992px) {
+  .modern-modal { width: 500px; margin: 10px; }
+}
+@include respond('md') {
+  .modal-overlay { padding: 14px; align-items: flex-end; }
+  .modern-modal {
+    width: 100%;
+    max-height: 92vh;
+    padding: 24px;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+  }
+  .modal-header { margin-bottom: 24px; }
+  .modal-title h2 { font-size: 26px; }
+  .modal-title p { font-size: 14px; }
+  .form-grid { grid-template-columns: 1fr; gap: 18px; }
+  .input-group input,
+  .input-group select,
+  .input-group textarea { font-size: 14px; }
+  .modal-footer { flex-direction: column-reverse; gap: 12px; }
+  .btn-save, .btn-cancel { width: 100%; }
+}
+@include respond('sm') {
+  .modal-overlay { padding: 0; }
+  .modern-modal { padding: 30px; border-radius: var(--r-xl) var(--r-xl) 0 0; min-height: auto; }
+  .modal-title h2 { font-size: 22px; }
+  .modal-title p { font-size: 13px; }
+  .close-btn { min-width: 42px; height: 42px; border-radius: var(--r-md); }
+  .input-group label { font-size: 13px; }
+  .input-group input,
+  .input-group select { height: 54px; border-radius: var(--r-md); padding: 0 16px; }
+  .input-group textarea { border-radius: var(--r-md); }
+  .btn-save, .btn-cancel { height: 52px; border-radius: var(--r-md); font-size: 14px; }
+}
+@include respond(360px) {
+  .modern-modal { padding: 18px; }
+  .modal-title h2 { font-size: 20px; }
+}

@@ -1,0 +1,12 @@
+// ============================================================
+//  components/_forms.scss — utilitários de formulário compartilhados
+//  .form-error estava duplicado em 4 páginas; agora vive aqui.
+// ============================================================
+@use '../abstracts' as *;
+
+.form-error {
+  min-height: 1em;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--danger);
+}

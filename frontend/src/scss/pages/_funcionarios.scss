@@ -1,0 +1,201 @@
+// ============================================================
+//  pages/_funcionarios.scss — Gestão de Funcionários (RH)
+//  origem: funcionarios.css · botões/badges/tags/icon-btn/form-error em componentes
+// ============================================================
+@use '../abstracts' as *;
+
+.hr { @include page-shell; }
+
+.hr-header {
+  @include page-header;
+  h1 { @include page-h1; }
+}
+.hr-eyebrow { @include eyebrow; margin-bottom: 6px; }
+.hr-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
+// ---------- Resumo ----------
+.hr-summary { @include summary-strip; }
+.hr-sum {
+  background: var(--surface);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  > div { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .l { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+  .v { font-family: var(--font-data); font-size: 22px; font-weight: 800; letter-spacing: -.01em; color: var(--text); line-height: 1; }
+}
+.hr-ico {
+  width: 42px; height: 42px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-md);
+
+  i { padding: 0; font-size: 18px; }
+  &.in    { background: var(--brand-soft); }
+  &.in i  { color: var(--brand-strong); }
+  &.ok    { background: var(--success-soft); }
+  &.ok i  { color: var(--success); }
+  &.money { background: var(--brand-soft); }
+  &.money i { color: var(--brand-strong); }
+  &.warn    { background: var(--warning-soft); }
+  &.warn i  { color: var(--warning); }
+}
+
+// ---------- Toolbar ----------
+.hr-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+}
+.hr-search {
+  @include search-box;
+  flex: 1; min-width: 220px; max-width: 380px;
+}
+.hr-filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hr-select { @include select-base; }
+.hr-view {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+
+  button {
+    width: 36px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: none; border-radius: var(--r-sm);
+    color: var(--text-muted); cursor: pointer;
+    transition: background var(--transition), color var(--transition);
+
+    i { padding: 0; color: inherit; font-size: 16px; }
+    &.active { background: var(--surface); color: var(--brand-strong); box-shadow: var(--shadow-sm); }
+  }
+}
+
+// ---------- Grid de cards ----------
+.hr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.hr-card {
+  @include card;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+
+  &:hover { border-color: var(--brand-line); box-shadow: var(--shadow-md); transform: translateY(-3px); }
+}
+.hr-card-top { display: flex; align-items: center; gap: 12px; }
+.hr-avatar {
+  width: 50px; height: 50px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-full);
+  color: #fff;
+  font-family: var(--font-data);
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: .5px;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35);
+}
+.hr-id { flex: 1; min-width: 0; }
+.hr-name { font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hr-role { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hr-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.hr-meta {
+  display: flex; flex-direction: column; gap: 9px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.hr-meta-item {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 13px; color: var(--text-muted); min-width: 0;
+
+  i { padding: 0; color: var(--text-dim); font-size: 14px; flex-shrink: 0; }
+  span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+.hr-card-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.hr-salary-wrap {
+  display: flex; flex-direction: column; gap: 2px;
+  .cap { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); }
+}
+.hr-salary { font-family: var(--font-data); font-weight: 800; font-size: 18px; color: var(--text); }
+.hr-card-actions { display: flex; gap: 8px; }
+
+// ---------- Lista (tabela) ----------
+.hr-list-wrap {
+  @include card;
+  overflow-x: auto;
+}
+.hr-table {
+  width: 100%; min-width: 720px; border-collapse: collapse;
+
+  thead tr { background: var(--surface-2); border-bottom: 1px solid var(--border); }
+  th {
+    padding: 13px 16px;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+
+    &.num { text-align: right; }
+  }
+  td {
+    padding: 13px 16px;
+    font-size: 13.5px;
+    color: var(--text);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--brand-softer); }
+  .num { text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; font-weight: 700; }
+}
+.hr-cell-name {
+  display: flex; align-items: center; gap: 10px;
+  .hr-avatar { width: 36px; height: 36px; font-size: 13px; }
+  .n { font-weight: 700; }
+  .e { font-size: 12px; color: var(--text-muted); }
+}
+
+// ---------- Estado vazio ----------
+.hr-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 56px 20px;
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+
+  .ico { font-size: 2.2rem; color: var(--text-dim); }
+  p { margin-top: 10px; color: var(--text-muted); font-size: .92rem; }
+}
+
+// ---------- Responsivo ----------
+@include respond('lg') { .hr-summary { grid-template-columns: repeat(2, 1fr); } }
+@include respond('md') {
+  .hr { padding: 20px 16px 56px; gap: 16px; }
+  .hr-header h1 { font-size: 1.55rem; }
+  .hr-grid { grid-template-columns: 1fr; }
+  .hr-actions { flex: 1; }
+  .hr-actions .btn-ghost,
+  .hr-actions .btn-solid { flex: 1; justify-content: center; }
+  .hr-toolbar { gap: 10px; }
+  .hr-search { max-width: none; }
+  .hr-filters { width: 100%; }
+  .hr-filters .hr-select { flex: 1; }
+  .hr-sum .v { font-size: 19px; }
+}
+@include respond(420px) {
+  .hr-summary { grid-template-columns: 1fr; }
+  .hr-sum { padding: 14px 16px; }
+}

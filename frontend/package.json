@@ -1,0 +1,14 @@
+{
+  "name": "jc-gestao-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Front-end JC Elétrica & Solar — build de SASS",
+  "scripts": {
+    "css": "sass src/scss/main.scss:src/css/app.css src/scss/login.scss:src/css/login.css --style=compressed --no-source-map",
+    "css:dev": "sass src/scss/main.scss:src/css/app.css src/scss/login.scss:src/css/login.css --style=expanded",
+    "watch": "sass --watch src/scss/main.scss:src/css/app.css src/scss/login.scss:src/css/login.css --style=compressed"
+  },
+  "devDependencies": {
+    "sass": "^1.101.0"
+  }
+}

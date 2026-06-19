@@ -1,0 +1,46 @@
+// ============================================================
+//  base/_base.scss — base global e elementos soltos
+//  (origem: styles.css + icons.css)
+// ============================================================
+@use '../abstracts' as *;
+
+aside { padding: 10px; }
+
+mark {
+  color: var(--brand);
+  background-color: transparent;
+}
+
+// NOTA: regra ampla — colore TODO <i>. É a origem das dezenas de
+// overrides "i { color: inherit }" espalhados pelos componentes.
+// Mantida para preservar o comportamento atual; candidata a remoção.
+i {
+  padding-right: 5px;
+  color: var(--brand);
+}
+
+// Ajustes pontuais de ícones (origem: icons.css)
+.bi-graph-up-arrow,
+.bi-clock-history {
+  color: var(--brand-strong) !important;
+  font-size: 1rem;
+}
+
+// ---------- Logo ----------
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.logo-dot {
+  display: inline-block;
+
+  img { width: 50px; }
+
+  &.home img {
+    margin-top: 3px;
+    width: 40px;
+  }
+}

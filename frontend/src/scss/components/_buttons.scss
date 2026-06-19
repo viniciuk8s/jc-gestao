@@ -1,0 +1,7 @@
+// ============================================================
+//  components/_buttons.scss — definidos UMA vez (antes em 5 arquivos)
+// ============================================================
+@use '../abstracts' as *;
+
+.btn-solid { @include btn-solid; }
+.btn-ghost { @include btn-ghost; }

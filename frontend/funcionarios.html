@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#172E45">
+  <meta name="description" content="Gestão de funcionários da JC Elétrica &amp; Solar.">
+    <title>Funcionários — JC Elétrica &amp; Solar</title>
+
+  <!-- Fontes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Ícones -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+  <link rel="stylesheet" href="src/css/app.css">
+
+ <!-- Supabase (CDN) + proteção de sessão -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="src/js/supabase.js"></script>
+  <script defer src="src/js/config.js"></script>
+  <script defer src="src/js/api.js"></script>
+  <script defer src="src/js/auth-guard.js"></script>
+  <script defer src="src/js/layout.js"></script>
+  <script defer src="src/js/sidebar.js"></script>
+  <script defer src="src/js/dropdown.js"></script>
+  <!-- utilitários compartilhados + UI (toast/confirm) -->
+  <script defer src="src/js/utils.js"></script>
+  <script defer src="src/js/ui.js"></script>
+  <script defer src="src/js/modal.js"></script>
+  <script defer src="src/js/funcionarios.js"></script>
+
+
+</head>
+
+<body data-page="funcionarios">
+
+
+  <main class="main-content">
+
+    <div class="hr">
+
+      <!-- Cabeçalho -->
+      <div class="hr-header">
+        <div>
+          <div class="hr-eyebrow">Equipe</div>
+          <h1>Funcionários</h1>
+        </div>
+        <div class="hr-actions">
+          <button type="button" class="btn-ghost" id="hr-export"><i class="bi bi-download" aria-hidden="true"></i> Exportar CSV</button>
+          <button type="button" class="btn-solid" id="hr-add"><i class="bi bi-person-plus" aria-hidden="true"></i> Novo funcionário</button>
+        </div>
+      </div>
+
+      <!-- Resumo -->
+      <div class="hr-summary">
+        <div class="hr-sum">
+          <span class="hr-ico in"><i class="bi bi-people" aria-hidden="true"></i></span>
+          <div><span class="l">Funcionários</span><span class="v" id="hr-total">0</span></div>
+        </div>
+        <div class="hr-sum">
+          <span class="hr-ico ok"><i class="bi bi-person-check" aria-hidden="true"></i></span>
+          <div><span class="l">Ativos</span><span class="v" id="hr-ativos">0</span></div>
+        </div>
+        <div class="hr-sum">
+          <span class="hr-ico money"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
+          <div><span class="l">Folha mensal</span><span class="v" id="hr-folha">R$ 0</span></div>
+        </div>
+        <div class="hr-sum">
+          <span class="hr-ico warn"><i class="bi bi-airplane" aria-hidden="true"></i></span>
+          <div><span class="l">Férias / afastados</span><span class="v" id="hr-afast">0</span></div>
+        </div>
+      </div>
+
+      <!-- Barra de ferramentas -->
+      <div class="hr-toolbar">
+        <div class="hr-search">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input type="text" id="hr-busca" aria-label="Buscar funcionários" placeholder="Buscar por nome, função ou e-mail...">
+        </div>
+        <div class="hr-filters">
+          <select class="hr-select" id="hr-dep">
+            <option value="todos">Todos os setores</option>
+            <option value="Elétrica">Elétrica</option>
+            <option value="Solar">Solar</option>
+            <option value="Administrativo">Administrativo</option>
+            <option value="Comercial">Comercial</option>
+          </select>
+          <select class="hr-select" id="hr-status">
+            <option value="todos">Todos os status</option>
+            <option value="ativo">Ativo</option>
+            <option value="ferias">Férias</option>
+            <option value="afastado">Afastado</option>
+            <option value="inativo">Inativo</option>
+          </select>
+          <div class="hr-view" id="hr-view" role="group" aria-label="Modo de exibição">
+            <button type="button" data-view="grid" class="active" aria-label="Ver em cards"><i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i></button>
+            <button type="button" data-view="list" aria-label="Ver em lista"><i class="bi bi-list-ul" aria-hidden="true"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visão em cards -->
+      <div class="hr-grid" id="hr-grid"></div>
+
+      <!-- Visão em lista -->
+      <div class="hr-list-wrap" id="hr-list" hidden>
+        <table class="hr-table">
+          <thead>
+            <tr>
+              <th>Funcionário</th>
+              <th>Função</th>
+              <th>Setor</th>
+              <th>Contrato</th>
+              <th>Admissão</th>
+              <th class="num">Salário</th>
+              <th>Status</th>
+              <th aria-label="Ações"></th>
+            </tr>
+          </thead>
+          <tbody id="hr-tbody"></tbody>
+        </table>
+      </div>
+
+    </div>
+
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modern-modal" role="dialog" aria-modal="true" aria-labelledby="hr-modal-title">
+
+        <div class="modal-header">
+          <div class="modal-title">
+            <h2 id="hr-modal-title">Novo funcionário</h2>
+            <p>Cadastre os dados do colaborador</p>
+          </div>
+          <button type="button" class="close-btn" onclick="closeModal()" aria-label="Fechar"><i class="ti ti-x" aria-hidden="true"></i></button>
+        </div>
+
+        <form class="modal-form" id="hr-form">
+          <input type="hidden" id="hf-id">
+          <div class="form-grid">
+
+            <div class="input-group full">
+              <label for="hf-nome">Nome completo</label>
+              <input type="text" id="hf-nome" placeholder="Ex: Maria Souza" autocomplete="off">
+            </div>
+
+            <div class="input-group">
+              <label for="hf-funcao">Função / Cargo</label>
+              <input type="text" id="hf-funcao" list="hr-funcoes" placeholder="Ex: Eletricista" autocomplete="off">
+              <datalist id="hr-funcoes">
+                <option value="Eletricista"></option>
+                <option value="Técnico em energia solar"></option>
+                <option value="Engenheiro eletricista"></option>
+                <option value="Auxiliar técnico"></option>
+                <option value="Gerente de obras"></option>
+                <option value="Vendedor"></option>
+                <option value="Administrativo"></option>
+                <option value="Financeiro"></option>
+              </datalist>
+            </div>
+
+            <div class="input-group">
+              <label for="hf-dep">Setor</label>
+              <select id="hf-dep">
+                <option>Elétrica</option>
+                <option>Solar</option>
+                <option>Administrativo</option>
+                <option>Comercial</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label for="hf-contrato">Tipo de contrato</label>
+              <select id="hf-contrato">
+                <option>CLT</option>
+                <option>PJ</option>
+                <option>Temporário</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label for="hf-status">Status</label>
+              <select id="hf-status">
+                <option value="ativo">Ativo</option>
+                <option value="ferias">Férias</option>
+                <option value="afastado">Afastado</option>
+                <option value="inativo">Inativo</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label for="hf-salario">Salário (R$)</label>
+              <input type="number" id="hf-salario" step="0.01" min="0" placeholder="0,00">
+            </div>
+
+            <div class="input-group">
+              <label for="hf-admissao">Data de admissão</label>
+              <input type="date" id="hf-admissao">
+            </div>
+
+            <div class="input-group">
+              <label for="hf-email">E-mail</label>
+              <input type="email" id="hf-email" placeholder="nome@empresa.com" autocomplete="off">
+            </div>
+
+            <div class="input-group">
+              <label for="hf-telefone">Telefone</label>
+              <input type="tel" id="hf-telefone" placeholder="(00) 00000-0000" autocomplete="off">
+            </div>
+
+            <div class="input-group full">
+              <p class="form-error" id="hr-form-error"></p>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+            <button type="submit" class="btn-save">Salvar funcionário</button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+  </main>
+   
+
+</body>
+</html>
