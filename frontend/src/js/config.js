@@ -4,5 +4,5 @@
 window.JC_CONFIG = {
   // Troque pela URL do seu backend no Render. Ex.: https://jc-backend.onrender.com
   // (sem barra no final)
-  API_BASE: "https://SEU-BACKEND.onrender.com",
+  API_BASE: "https://jc-gestao.onrender.com",
 };
