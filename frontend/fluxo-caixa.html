@@ -11,18 +11,31 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
   <!-- Ícones -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 
   <link rel="stylesheet" href="src/css/app.css">
 
+  <!-- Correção do modal desta página: esconde por padrão e centraliza ao abrir.
+       (#id vence regra de classe do app.css; .is-open é exclusivo desta página) -->
+  <style id="cf-modal-fix">
+    #modalOverlay{
+      position: fixed; inset: 0; z-index: 9999;
+      display: none;                 /* escondido por padrao (resolve "aparecer no html") */
+      align-items: center; justify-content: center; padding: 24px;
+      background: rgba(8, 18, 32, .55);
+      -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+    }
+    #modalOverlay.is-open{ display: flex; }   /* visivel so quando aberto */
+    body.modal-open{ overflow: hidden; }      /* trava o scroll do fundo */
+  </style>
+
  <!-- Supabase (CDN) + proteção de sessão -->
+  <!-- Supabase + sessão. Ordem: supabase -> config -> auth-guard -> layout -> sidebar -> dropdown -> utils -> ui -> modal -> api -> fluxo -->
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="src/js/supabase.js"></script>
   <script defer src="src/js/config.js"></script>
-  <script defer src="src/js/api.js"></script>
   <script defer src="src/js/auth-guard.js"></script>
   <script defer src="src/js/layout.js"></script>
   <script defer src="src/js/sidebar.js"></script>
@@ -30,7 +43,7 @@
   <!-- utilitários compartilhados + UI (toast/confirm) -->
   <script defer src="src/js/utils.js"></script>
   <script defer src="src/js/ui.js"></script>
-  <script defer src="src/js/modal.js"></script>
+  <script defer src="src/js/api.js"></script>
   <script defer src="src/js/fluxo.js"></script>
 
 
@@ -220,6 +233,31 @@
 
    </main>
    
+
+  <!-- Controlador do modal (local desta pagina).
+       Define window.openModal / window.closeModal que o HTML e o fluxo.js usam. -->
+  <script>
+    (function () {
+      var ov = document.getElementById('modalOverlay');
+      if (!ov) return;
+      function abrir() {
+        ov.classList.add('is-open');
+        document.body.classList.add('modal-open');
+        var p = document.getElementById('f-descricao');
+        if (p) { try { p.focus(); } catch (e) {} }
+      }
+      function fechar() {
+        ov.classList.remove('is-open');
+        document.body.classList.remove('modal-open');
+      }
+      window.openModal = abrir;     // usado pelo onclick do botao "Novo lancamento"
+      window.closeModal = fechar;   // usado pelo onclick e pelo fluxo.js apos salvar
+      ov.addEventListener('click', function (e) { if (e.target === ov) fechar(); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && ov.classList.contains('is-open')) fechar();
+      });
+    })();
+  </script>
 
 </body>
 </html>

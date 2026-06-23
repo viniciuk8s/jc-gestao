@@ -20,6 +20,10 @@ export const funcionarioCreate = z.object({
   status: z.enum(["ativo", "ferias", "afastado", "inativo"]).optional(),
   email: z.union([z.string().email("E-mail inválido").max(160), z.literal("")]).nullish(),
   telefone: z.string().max(40).nullish(),
+  foto: z.string().nullish(),                  // URL ou dataURL (sem validação estrita)
+  cpf: z.string().max(20).nullish(),
+  nascimento: dateStr.nullish(),
+  endereco: z.string().max(200).nullish(),
 });
 export const funcionarioUpdate = funcionarioCreate.partial();
 export const funcionarioQuery = z.object({
@@ -69,7 +73,7 @@ export const agendamentoCreate = z.object({
   cliente: z.string().max(120).nullish(),
   horario: z.string().max(10).nullish(),
   valor: money.optional(),
-  status: z.enum(["confirmado", "pendente", "cancelado"]).optional(),
+  status: z.enum(["confirmado", "pendente", "cancelado", "concluido"]).optional(),
   obs: z.string().nullish(),
 });
 export const agendamentoUpdate = agendamentoCreate.partial();
@@ -95,8 +99,27 @@ export const pagamentoQuery = z.object({
   competencia: z.string().optional(),
 });
 
+// ---------- Jornadas (registro de trabalho) ----------
+const timeStr = z.string().regex(/^\d{1,2}:\d{2}$/, "Horário deve ser HH:MM");
+export const jornadaCreate = z.object({
+  funcionarioId: z.coerce.number({ invalid_type_error: "Funcionário inválido" }).int().positive(),
+  data: dateStr,
+  entrada: timeStr.nullish(),
+  saida: timeStr.nullish(),
+  atividade: z.string().trim().max(500).nullish(),
+  despesa: money.optional(),
+  despesaDesc: z.string().max(160).nullish(),
+});
+export const jornadaUpdate = jornadaCreate.partial();
+export const jornadaQuery = z.object({
+  funcionario_id: z.coerce.number().int().positive().optional(),
+  de: dateStr.optional(),
+  ate: dateStr.optional(),
+});
+
 // Tipos de entrada
 export type FuncionarioInput = z.infer<typeof funcionarioCreate>;
+export type JornadaInput = z.infer<typeof jornadaCreate>;
 export type LancamentoInput = z.infer<typeof lancamentoCreate>;
 export type ProjetoInput = z.infer<typeof projetoCreate>;
 export type AgendamentoInput = z.infer<typeof agendamentoCreate>;

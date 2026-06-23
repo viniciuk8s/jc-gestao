@@ -1,6 +1,6 @@
 /* ============================================================
    fluxo.js — Fluxo de Caixa (livro-caixa empresarial)
-   Estado em localStorage, filtros de período/tipo/busca,
+   Dados via API (JC.api.lancamentos). Filtros de período/tipo/busca,
    saldo acumulado realizado, resumo do período, exportação CSV.
    ============================================================ */
 'use strict';
@@ -13,39 +13,35 @@
   var esc = JC.esc, fmt = JC.brl, fmtDateBR = JC.fmtDate;
   var gv = JC.val, setVal = JC.setVal, set = JC.setText;
 
-  var KEY = 'jc_fluxo_caixa';
-  var SALDO_INICIAL = 18450.90; // saldo de abertura do caixa
+  var SALDO_INICIAL = 0; // saldo de abertura do caixa (ajuste aqui se houver)
 
   var state = {
-    movs: load(),
+    movs: [],
     period: 30,     // 7 | 30 | 90 | 'all'
     tipo: 'todos',  // 'todos' | 'entrada' | 'saida'
-    busca: ''
+    busca: '',
+    carregando: true
   };
 
-  /* ---------- Persistência ---------- */
-  function load() {
+  function recurso() { return JC.api.lancamentos; }
+
+  /* ---------- Carregamento (API) ---------- */
+  async function carregar() {
+    state.carregando = true;
+    render();
     try {
-      var raw = localStorage.getItem(KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    return seed();
-  }
-  function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(state.movs)); } catch (e) {}
-  }
-  function seed() {
-    var base = [
-      { data: '2026-06-10', descricao: 'Instalação solar — Cond. Vila Verde', categoria: 'Instalação solar', forma: 'Pix',           tipo: 'entrada', status: 'pago',     valor: 12500 },
-      { data: '2026-06-09', descricao: 'Compra de cabos e disjuntores',        categoria: 'Fornecedores',      forma: 'Boleto',        tipo: 'saida',   status: 'pago',     valor: 4200 },
-      { data: '2026-06-08', descricao: 'Manutenção elétrica — Mercado São José',categoria: 'Serviços',         forma: 'Transferência', tipo: 'entrada', status: 'pago',     valor: 1850 },
-      { data: '2026-06-07', descricao: 'Folha de pagamento — equipe',          categoria: 'Folha de pagamento',forma: 'Transferência', tipo: 'saida',   status: 'pago',     valor: 9800 },
-      { data: '2026-06-06', descricao: 'Projeto fotovoltaico — Padaria',       categoria: 'Instalação solar', forma: 'Cartão',        tipo: 'entrada', status: 'pago',     valor: 7600 },
-      { data: '2026-06-05', descricao: 'Combustível da frota',                 categoria: 'Combustível',      forma: 'Cartão',        tipo: 'saida',   status: 'pago',     valor: 680 },
-      { data: '2026-06-13', descricao: 'Impostos — Simples Nacional',          categoria: 'Impostos',         forma: 'Boleto',        tipo: 'saida',   status: 'pendente', valor: 3100 },
-      { data: '2026-06-14', descricao: 'Vistoria de geração — Aldeota',        categoria: 'Serviços',         forma: 'Pix',           tipo: 'entrada', status: 'agendado', valor: 900 }
-    ];
-    return base.map(function (m, i) { m.id = 'm' + (Date.now() + i); return m; });
+      var lista = await recurso().list(); // todos; o filtro é no cliente
+      state.movs = (lista || []).map(function (m) {
+        m.valor = Number(m.valor) || 0;
+        return m;
+      });
+    } catch (e) {
+      console.error('Falha ao carregar lançamentos:', e);
+      JC.toast('Não foi possível carregar os lançamentos.', 'error');
+      state.movs = [];
+    }
+    state.carregando = false;
+    render();
   }
 
   /* ---------- Helpers ---------- */
@@ -75,22 +71,29 @@
     if (state.period === 'all') return true;
     var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
     var min = new Date(hoje); min.setDate(min.getDate() - Number(state.period));
-    return toDate(dataStr) >= min; // do período pra cá (inclui agendados futuros)
+    return toDate(dataStr) >= min;
   }
   function getFiltered() {
     var q = state.busca.toLowerCase();
     return state.movs.filter(function (m) {
       if (!withinPeriod(m.data)) return false;
       if (state.tipo !== 'todos' && m.tipo !== state.tipo) return false;
-      if (q && (m.descricao + ' ' + m.categoria).toLowerCase().indexOf(q) === -1) return false;
+      if (q && ((m.descricao || '') + ' ' + (m.categoria || '')).toLowerCase().indexOf(q) === -1) return false;
       return true;
     }).sort(function (a, b) {
-      return a.data < b.data ? 1 : a.data > b.data ? -1 : 0; // mais recentes primeiro
+      return a.data < b.data ? 1 : a.data > b.data ? -1 : 0;
     });
   }
 
   /* ---------- Render ---------- */
   function render() {
+    var tbody = document.getElementById('cf-tbody');
+
+    if (state.carregando) {
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7"><div class="cf-empty"><p>Carregando…</p></div></td></tr>';
+      return;
+    }
+
     var saldos = computeSaldos();
     var rows = getFiltered();
 
@@ -118,20 +121,18 @@
     }
 
     // Corpo da tabela
-    var tbody = document.getElementById('cf-tbody');
     tbody.innerHTML = '';
-
     if (rows.length === 0) {
       tbody.innerHTML = '<tr><td colspan="7"><div class="cf-empty">' +
         '<div class="ico"><i class="bi bi-inbox"></i></div>' +
-        '<p>Nenhum lançamento neste período.<br>Use “Novo lançamento” para começar.</p>' +
+        '<p>Nenhum lançamento neste período.<br>Use "Novo lançamento" para começar.</p>' +
         '</div></td></tr>';
       return;
     }
 
     rows.forEach(function (m) {
       var saldo = saldos.map[m.id];
-      var saldoCell = saldo === null
+      var saldoCell = saldo === null || saldo === undefined
         ? '<span class="saldo na">—</span>'
         : '<span class="saldo' + (saldo < 0 ? ' neg' : '') + '">' + fmt(saldo) + '</span>';
       var sinal = m.tipo === 'entrada' ? '+ ' : '− ';
@@ -155,21 +156,18 @@
     });
   }
 
-  /* ---------- Ações ---------- */
-  function addMov(m) {
-    m.id = 'm' + Date.now();
-    state.movs.push(m);
-    save();
-    render();
-    JC.toast('Lançamento adicionado.', 'success');
-  }
+  /* ---------- Ações (API) ---------- */
   function removeMov(id) {
-    JC.confirm({ message: 'Excluir este lançamento?', confirmText: 'Excluir', danger: true }).then(function (ok) {
+    JC.confirm({ message: 'Excluir este lançamento?', confirmText: 'Excluir', danger: true }).then(async function (ok) {
       if (!ok) return;
-      state.movs = state.movs.filter(function (m) { return m.id !== id; });
-      save();
-      render();
-      JC.toast('Lançamento excluído.', 'success');
+      try {
+        await recurso().remove(id);
+        JC.toast('Lançamento excluído.', 'success');
+        await carregar();
+      } catch (e) {
+        console.error(e);
+        JC.toast('Erro ao excluir o lançamento.', 'error');
+      }
     });
   }
 
@@ -181,9 +179,9 @@
     rows.forEach(function (m) {
       lines.push([
         fmtDateBR(m.data),
-        '"' + m.descricao.replace(/"/g, '""') + '"',
-        m.categoria, m.forma, m.tipo, m.status,
-        m.valor.toFixed(2).replace('.', ',')
+        JC.csvCell(m.descricao),
+        JC.csvCell(m.categoria), JC.csvCell(m.forma), m.tipo, m.status,
+        (Number(m.valor) || 0).toFixed(2).replace('.', ',')
       ].join(';'));
     });
     JC.saveCSV('fluxo-de-caixa-' + new Date().toISOString().slice(0, 10) + '.csv', lines);
@@ -203,7 +201,7 @@
     if (err) err.textContent = '';
   }
 
-  function submitForm(e) {
+  async function submitForm(e) {
     if (e) e.preventDefault();
     var err = document.getElementById('cf-form-error');
     var setErr = function (msg) { if (err) err.textContent = msg; };
@@ -217,7 +215,7 @@
     if (!data) { setErr('Informe a data.'); return; }
     setErr('');
 
-    addMov({
+    var body = {
       data: data,
       descricao: descricao,
       categoria: gv('f-categoria') || 'Outros',
@@ -225,9 +223,21 @@
       tipo: gv('f-tipo') || 'entrada',
       status: gv('f-status') || 'pago',
       valor: valor
-    });
+    };
 
-    if (window.closeModal) window.closeModal();
+    var saveBtn = document.querySelector('#cf-form .btn-save');
+    if (saveBtn) saveBtn.disabled = true;
+    try {
+      await recurso().create(body);
+      if (window.closeModal) window.closeModal();
+      JC.toast('Lançamento adicionado.', 'success');
+      await carregar();
+    } catch (ex) {
+      console.error(ex);
+      setErr(ex && ex.message ? ex.message : 'Erro ao salvar o lançamento.');
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
   }
 
   /* ---------- Eventos ---------- */
@@ -246,17 +256,17 @@
   if (tipoSel) tipoSel.addEventListener('change', function () { state.tipo = tipoSel.value; render(); });
 
   var busca = document.getElementById('cf-search');
-  if (busca) busca.addEventListener('input', function () { state.busca = busca.value; render(); });
+  if (busca) busca.addEventListener('input', JC.debounce(function () { state.busca = busca.value; render(); }, 200));
 
   var exp = document.getElementById('cf-export');
   if (exp) exp.addEventListener('click', exportCSV);
 
   var addBtn = document.getElementById('cf-add');
-  if (addBtn) addBtn.addEventListener('click', clearForm); // limpa antes de abrir
+  if (addBtn) addBtn.addEventListener('click', clearForm);
 
   var form = document.getElementById('cf-form');
   if (form) form.addEventListener('submit', submitForm);
 
   /* ---------- Init ---------- */
-  render();
+  carregar();
 })();

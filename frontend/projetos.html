@@ -22,14 +22,14 @@
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="src/js/supabase.js"></script>
   <script defer src="src/js/config.js"></script>
-  <script defer src="src/js/api.js"></script>
   <script defer src="src/js/auth-guard.js"></script>
   <script defer src="src/js/layout.js"></script>
   <script defer src="src/js/sidebar.js"></script>
   <script defer src="src/js/dropdown.js"></script>
-  <!-- utilitários compartilhados + UI (toast/confirm) -->
+  <!-- utilitários compartilhados + UI (toast/confirm) + modal dinâmico -->
   <script defer src="src/js/utils.js"></script>
   <script defer src="src/js/ui.js"></script>
+  <script defer src="src/js/api.js"></script>
   <script defer src="src/js/modal.js"></script>
   <script defer src="src/js/projetos.js"></script>
 
@@ -121,106 +121,6 @@
 
     </div>
 
-
-    <!-- MODAL -->
-    <div class="modal-overlay" id="modalOverlay">
-      <div class="modern-modal" role="dialog" aria-modal="true" aria-labelledby="pj-modal-title">
-
-        <div class="modal-header">
-          <div class="modal-title">
-            <h2 id="pj-modal-title">Novo projeto</h2>
-            <p>Defina os dados, o prazo e quem está envolvido</p>
-          </div>
-          <button type="button" class="close-btn" onclick="closeModal()" aria-label="Fechar"><i class="ti ti-x" aria-hidden="true"></i></button>
-        </div>
-
-        <form class="modal-form" id="pj-form">
-          <input type="hidden" id="pf-id">
-          <div class="form-grid">
-
-            <div class="input-group full">
-              <label for="pf-nome">Nome do projeto</label>
-              <input type="text" id="pf-nome" placeholder="Ex: Usina solar — Galpão Industrial" autocomplete="off">
-            </div>
-
-            <div class="input-group">
-              <label for="pf-cliente">Cliente</label>
-              <input type="text" id="pf-cliente" placeholder="Ex: Indústria Norte" autocomplete="off">
-            </div>
-
-            <div class="input-group">
-              <label for="pf-setor">Setor</label>
-              <select id="pf-setor">
-                <option>Elétrica</option>
-                <option>Solar</option>
-                <option>Administrativo</option>
-                <option>Comercial</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label for="pf-status">Status</label>
-              <select id="pf-status">
-                <option value="planejamento">Planejamento</option>
-                <option value="andamento">Em execução</option>
-                <option value="revisao">Em revisão</option>
-                <option value="concluido">Concluído</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label for="pf-prio">Prioridade</label>
-              <select id="pf-prio">
-                <option value="baixa">Baixa</option>
-                <option value="media">Média</option>
-                <option value="alta">Alta</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label for="pf-entrega">Data de entrega</label>
-              <input type="date" id="pf-entrega">
-              <small class="field-hint">Deixe em branco para “sem prazo”.</small>
-            </div>
-
-            <div class="input-group">
-              <label for="pf-prog">Progresso: <span id="pf-prog-val">0%</span></label>
-              <input type="range" id="pf-prog" min="0" max="100" step="5" value="0" class="range">
-            </div>
-
-            <div class="input-group full">
-              <label>Funcionários envolvidos</label>
-              <div class="chips-pick" id="pf-funcs"></div>
-            </div>
-
-            <div class="input-group full">
-              <label>Terceiros envolvidos</label>
-              <div class="chip-add">
-                <input type="text" id="pf-terc-input" placeholder="Nome do terceiro / empresa parceira">
-                <button type="button" class="btn-mini" id="pf-terc-btn"><i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar</button>
-              </div>
-              <div class="chips" id="pf-terceiros"></div>
-            </div>
-
-            <div class="input-group full">
-              <label for="pf-desc">Descrição</label>
-              <textarea id="pf-desc" rows="3" placeholder="Escopo, observações..."></textarea>
-            </div>
-
-            <div class="input-group full">
-              <p class="form-error" id="pf-error"></p>
-            </div>
-
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
-            <button type="submit" class="btn-save">Salvar projeto</button>
-          </div>
-        </form>
-
-      </div>
-    </div>
 
   </main>
    

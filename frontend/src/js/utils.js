@@ -32,17 +32,17 @@
   /* ---------- Datas (entrada ISO "AAAA-MM-DD") ---------- */
   function fmtDate(d, empty) {            // -> "DD/MM/AAAA"
     if (!d) return empty == null ? '—' : empty;
-    var p = String(d).split('-');
+    var p = String(d).slice(0, 10).split('-');   // slice: tolera "AAAA-MM-DDThh:mm:ss"
     return p[2] + '/' + p[1] + '/' + p[0];
   }
   function fmtDateShort(d, empty) {       // -> "DD/MM"
     if (!d) return empty == null ? '' : empty;
-    var p = String(d).split('-');
+    var p = String(d).slice(0, 10).split('-');
     return p[2] + '/' + p[1];
   }
   function fmtComp(c, empty) {            // competência "AAAA-MM" -> "mês/AAAA"
     if (!c) return empty == null ? '—' : empty;
-    var p = String(c).split('-');
+    var p = String(c).slice(0, 7).split('-');
     return MESES_CURTO[Number(p[1]) - 1] + '/' + p[0];
   }
 
@@ -94,7 +94,20 @@
     URL.revokeObjectURL(url);
   }
 
-  global.JC = {
+  // Adia a execução até parar de chamar por `wait` ms. Ideal p/ inputs de busca:
+  // evita re-renderizar a tabela inteira a cada tecla.
+  function debounce(fn, wait) {
+    var t;
+    return function () {
+      var ctx = this, args = arguments;
+      clearTimeout(t);
+      t = setTimeout(function () { fn.apply(ctx, args); }, wait == null ? 200 : wait);
+    };
+  }
+
+  // MESCLA no namespace JC (não sobrescreve) — assim convive com api.js
+  // em qualquer ordem de carregamento.
+  global.JC = Object.assign(global.JC || {}, {
     AVATAR_COLORS: AVATAR_COLORS,
     esc: esc,
     brl: brl,
@@ -107,6 +120,7 @@
     setVal: setVal,
     setText: setText,
     csvCell: csvCell,
-    saveCSV: saveCSV
-  };
+    saveCSV: saveCSV,
+    debounce: debounce
+  });
 })(window);

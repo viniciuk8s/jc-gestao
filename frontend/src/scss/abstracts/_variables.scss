@@ -1,68 +1,83 @@
 // ============================================================
 //  abstracts/_variables.scss — Design tokens
-//  Tokens ficam como CSS custom properties (tema em runtime).
-//  Variáveis SCSS ($) só para o que é usado em build (breakpoints).
+//  Tema inspirado no site da Opera (Opera One / Aurora):
+//  fundo escuro com gradiente quente, tipografia geométrica forte,
+//  cards modulares (vidro). Acento laranja da marca.
 // ============================================================
+
+// ---------- Fonte única da marca (SCSS) ----------
+// $brand é a verdade; os tons translúcidos são derivados em tempo de
+// compilação por brand(), evitando rgba(...) escritos à mão e fora de sincronia.
+$brand: #F97315;
+
+// Tom da marca com alfa.  Uso: brand(.12) -> rgba(249,115,21,.12)
+@function brand($alpha) { @return rgba($brand, $alpha); }
 
 :root {
 
-  // ---------- Marca (laranja, com rampa de profundidade) ----------
-  --brand:        #F97316;
-  --brand-strong: #EF6A01;
-  --brand-dark:   #C2560B;
-  --brand-amber:  #FB9A45;
-  --brand-soft:   rgba(239, 106, 1, .10);
-  --brand-softer: rgba(239, 106, 1, .05);
-  --brand-glow:   rgba(239, 106, 1, .35);
-  --brand-line:   rgba(239, 106, 1, .40);
+  // ---------- Marca / acento (laranja) ----------
+  --brand:        #{$brand};
+  --brand-strong: #ED6606;
+  --brand-dark:   #C2540A;            // laranja escuro p/ :active e hover sólido
+  --brand-2:      #FB8C3C;            // laranja claro (início do gradiente)
+  --brand-3:      #E8620A;            // laranja escuro (fim do gradiente)
+  --brand-amber:  #F59E0B;            // âmbar/solar p/ gradientes e realces
+  --brand-soft:   #{brand(.12)};
+  --brand-softer: #{brand(.06)};      // tint sutil p/ hover de linhas/superfícies
+  --brand-line:   #{brand(.40)};      // borda/realce da marca (hover, focus)
+  --brand-glow:   #{brand(.42)};
+  // gradiente quente da marca — botões, realces e textos de destaque
+  --brand-grad:   linear-gradient(120deg, var(--brand-2) 0%, var(--brand) 50%, var(--brand-3) 100%);
 
-  // ---------- Fundo ----------
-  --bg-0: #FFFFFF;
-  --bg-1: #F7F8FB;
-  --bg-2: #EEF1F7;
+  // ---------- Fundo (escuro + gradiente quente) ----------
+  --bg-0: #0C0F17;
+  --bg-1: #080A11;
+  --bg-2: #05070C;
   --bg-atmosphere:
-    radial-gradient(circle at top right,   rgba(239,106,1,.045), transparent 520px),
-    radial-gradient(circle at bottom left, rgba(239,106,1,.03),  transparent 520px),
-    linear-gradient(180deg, var(--bg-0), var(--bg-1), var(--bg-2));
+    radial-gradient(900px 520px at 12% -8%,  #{brand(.20)}, transparent 60%),
+    radial-gradient(820px 600px at 112% 6%,  #{brand(.12)}, transparent 58%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 60%, var(--bg-2) 100%);
 
-  // ---------- Superfícies ----------
-  --surface:       #FFFFFF;
-  --surface-2:     #F4F6FB;
-  --surface-3:     #FAFBFD;
-  --surface-solid: #FFFFFF;
+  // ---------- Superfícies (cards de vidro) ----------
+  --surface:       rgba(255, 255, 255, .055);
+  --surface-2:     rgba(255, 255, 255, .085);
+  --surface-3:     rgba(255, 255, 255, .12);
+  --surface-solid: #101A28;            // superfície opaca p/ dropdown/toast legíveis
+  --surface-blur:  blur(16px) saturate(130%);
 
   // ---------- Texto ----------
-  --text:       #131A2B;
-  --text-muted: #5A6478;
-  --text-dim:   #8A93A6;
+  --text:       #E8EDF5;
+  --heading:    #F6F8FC;
+  --text-muted: #9AA6BC;
+  --text-dim:   #6E7A91;
 
-  // ---------- Bordas ----------
-  --border:        rgba(19, 26, 43, .10);
-  --border-strong: rgba(19, 26, 43, .16);
-  --line:          #E6E9F0;
+  // ---------- Bordas / linhas ----------
+  --border:        rgba(255, 255, 255, .10);
+  --border-strong: rgba(255, 255, 255, .16);
+  --line:          rgba(255, 255, 255, .08);
 
   // ---------- Status ----------
-  --success: #16A34A; --success-soft: rgba(22, 163, 74, .12);
-  --danger:  #DC2626; --danger-soft:  rgba(220, 38, 38, .10);
-  --warning: #D97706; --warning-soft: rgba(217, 119, 6, .12);
+  --success: #34D399; --success-soft: rgba(52, 211, 153, .14);
+  --danger:  #FF7A7A; --danger-soft:  rgba(255, 122, 122, .14);
+  --warning: #FBBF24; --warning-soft: rgba(251, 191, 36, .14);
 
   // ---------- Raios ----------
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 8px;
-  --r-xl: 12px;
+  --r-sm:   5px;
+  --r-md:   10px;
+  --r-lg:   5px;
+  --r-xl:   24px;
   --r-full: 9999px;
 
   // ---------- Sombras ----------
-  --shadow-sm:   0 1px 2px rgba(19, 26, 43, .06);
-  --shadow-md:   0 4px 16px rgba(19, 26, 43, .08);
-  --shadow-lg:   0 12px 32px rgba(19, 26, 43, .12);
-  --shadow-glow: 0 8px 24px var(--brand-glow);
+  --shadow-sm:   0 1px 2px rgba(0, 0, 0, .40);
+  --shadow-md:   0 12px 34px -14px rgba(0, 0, 0, .58);
+  --shadow-lg:   0 34px 80px -22px rgba(0, 0, 0, .68);
+  --shadow-glow: 0 16px 44px -12px var(--brand-glow);
 
   // ---------- Tipografia ----------
-  --font-display: 'Syne', 'Inter', sans-serif;
-  --font-body:    'Inter', system-ui, sans-serif;
-  --font-data:    'Inter', system-ui, sans-serif;
+  --font-display: 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body:    'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-data:    'Plus Jakarta Sans', system-ui, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
   // ---------- Layout ----------
@@ -83,10 +98,18 @@
   --z-toast:   10000;
 
   // ---------- Aliases ----------
-  --primary:       var(--brand-strong);
-  --secondary:     var(--text-dim);
-  --border-card:   var(--brand-line);
-  --border-radius: var(--r-md);
+  --primary:        var(--brand);
+  --primary-strong: var(--brand-strong);
+  --secondary:      var(--text-dim);
+  --border-card:    var(--border);
+  --border-radius:  var(--r-md);
+}
+
+// Fundo aplicado ao corpo (fixo, com cor sólida de fallback).
+body {
+  min-height: 100vh;
+  color: var(--text);
+  background: var(--bg-atmosphere) fixed, var(--bg-2);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -98,10 +121,4 @@
   }
 }
 
-// ---------- Breakpoints (SCSS, usados pelo mixin respond) ----------
-$breakpoints: (
-  'sm': 480px,
-  'md': 768px,
-  'lg': 1024px,
-  'xl': 1280px,
-);
+$breakpoints: ( 'sm': 480px, 'md': 768px, 'lg': 1024px, 'xl': 1280px );

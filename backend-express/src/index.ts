@@ -2,11 +2,13 @@
 import cors from "cors";
 import express from "express";
 import { requireAuth } from "./auth";
+import { gateEscrita } from "./permissoes";
 import { config, originsList } from "./config";
 import { errorHandler, notFound } from "./http";
 import agendamentosRouter from "./routers/agendamentos";
 import dashboardRouter from "./routers/dashboard";
 import funcionariosRouter from "./routers/funcionarios";
+import jornadasRouter from "./routers/jornadas";
 import lancamentosRouter from "./routers/lancamentos";
 import pagamentosRouter from "./routers/pagamentos";
 import projetosRouter from "./routers/projetos";
@@ -21,14 +23,20 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-// Rotas da API — todas exigem autenticação.
-app.use("/api/funcionarios", requireAuth, funcionariosRouter);
-app.use("/api/lancamentos", requireAuth, lancamentosRouter);
-app.use("/api/agendamentos", requireAuth, agendamentosRouter);
-app.use("/api/projetos", requireAuth, projetosRouter);
-app.use("/api/pagamentos", requireAuth, pagamentosRouter);
-app.use("/api/dashboard", requireAuth, dashboardRouter);
-app.use("/api/relatorios", requireAuth, relatoriosRouter);
+// Autenticação + autorização (papéis) para TODA a API.
+// Leitura (GET) liberada a qualquer usuário autenticado;
+// escrita (POST/PUT/PATCH/DELETE) exige papel "admin" (CEO/TI).
+app.use("/api", requireAuth, gateEscrita);
+
+// Rotas da API.
+app.use("/api/funcionarios", funcionariosRouter);
+app.use("/api/lancamentos", lancamentosRouter);
+app.use("/api/agendamentos", agendamentosRouter);
+app.use("/api/projetos", projetosRouter);
+app.use("/api/pagamentos", pagamentosRouter);
+app.use("/api/jornadas", jornadasRouter);
+app.use("/api/dashboard", dashboardRouter);
+app.use("/api/relatorios", relatoriosRouter);
 
 app.use(notFound);
 app.use(errorHandler);

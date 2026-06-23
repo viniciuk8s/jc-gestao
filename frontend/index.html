@@ -21,11 +21,10 @@
 
   <link rel="stylesheet" href="src/css/app.css">
 
- <!-- Supabase (CDN) + proteção de sessão -->
+  <!-- Supabase (CDN) + sessão. Ordem: supabase -> config -> api -> auth-guard -> layout -> sidebar -> dropdown -->
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="src/js/supabase.js"></script>
   <script defer src="src/js/config.js"></script>
-  <script defer src="src/js/api.js"></script>
   <script defer src="src/js/auth-guard.js"></script>
   <script defer src="src/js/layout.js"></script>
   <script defer src="src/js/sidebar.js"></script>
@@ -33,6 +32,8 @@
   <!-- utilitários compartilhados + UI (toast/confirm) -->
   <script defer src="src/js/utils.js"></script>
   <script defer src="src/js/ui.js"></script>
+  <script defer src="src/js/api.js"></script>
+  <script defer src="src/js/painel.js"></script>
 </head>
 
 <body data-page="painel">
@@ -58,7 +59,7 @@
       <!-- KPIs -->
       <div class="stat-row">
 
-        <div class="stat">
+        <div class="stat" data-kpi="receita">
           <div class="stat-top">
             <span class="stat-label">Receita do mês</span>
             <span class="stat-ico"><i class="bi bi-currency-dollar" aria-hidden="true"></i></span>
@@ -70,7 +71,7 @@
           </div>
         </div>
 
-        <div class="stat">
+        <div class="stat" data-kpi="servicos">
           <div class="stat-top">
             <span class="stat-label">Serviços na semana</span>
             <span class="stat-ico"><i class="bi bi-calendar-check" aria-hidden="true"></i></span>
@@ -82,7 +83,7 @@
           </div>
         </div>
 
-        <div class="stat">
+        <div class="stat" data-kpi="projetos">
           <div class="stat-top">
             <span class="stat-label">Projetos ativos</span>
             <span class="stat-ico"><i class="bi bi-lightning-charge" aria-hidden="true"></i></span>
@@ -93,7 +94,7 @@
           </div>
         </div>
 
-        <div class="stat">
+        <div class="stat" data-kpi="areceber">
           <div class="stat-top">
             <span class="stat-label">A receber</span>
             <span class="stat-ico"><i class="bi bi-wallet2" aria-hidden="true"></i></span>
@@ -116,7 +117,7 @@
             <span class="panel-meta">Últimos 7 meses · R$ mil</span>
           </div>
           <div class="panel-body">
-            <div class="bars">
+            <div class="bars" id="receita-bars">
               <div class="bar-col"><div class="bar-track"><div class="bar" style="height:48%"></div></div><span class="bar-label">Dez</span></div>
               <div class="bar-col"><div class="bar-track"><div class="bar" style="height:56%"></div></div><span class="bar-label">Jan</span></div>
               <div class="bar-col"><div class="bar-track"><div class="bar" style="height:44%"></div></div><span class="bar-label">Fev</span></div>
@@ -134,7 +135,7 @@
             <span class="panel-meta">Esta semana</span>
           </div>
           <div class="panel-body">
-            <div class="sched">
+            <div class="sched" id="proximos-servicos">
 
               <div class="sched-item">
                 <div class="sched-day"><span class="d">12</span><span class="m">Jun</span></div>
@@ -202,13 +203,9 @@
   </main>
 
   <script>
+    // Apenas a data (eyebrow). A saudação com o nome de quem logou
+    // é preenchida pelo layout.js (#greet-title), após carregar a sessão.
     (function () {
-      var h = new Date().getHours();
-      var saud = h < 12 ? 'Bom dia' : (h < 18 ? 'Boa tarde' : 'Boa noite');
-      var nome = 'João Carlos';
-      var title = document.getElementById('greet-title');
-      if (title) title.textContent = saud + ', ' + nome;
-
       var d = new Date();
       var data = d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
       var eyebrow = document.getElementById('greet-date');

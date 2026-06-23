@@ -1,0 +1,21 @@
+// ============================================================
+//  abstracts/_glass.scss — Tokens dos modais "vidro" (glass)
+//  Fonte única para #modalOverlay/.modern-modal (Fluxo/Relatórios)
+//  e #modal-overlay/.modal (Agenda). Antes duplicados em cada arquivo.
+//  Valores alinhados ao palette global (surface-solid / heading / text).
+//  NÃO é encaminhado pelo index de abstracts (fica fora do `as *` global):
+//  use direto ->  @use '../abstracts/glass' as *;
+// ============================================================
+
+$g-bg:        rgba(16, 26, 40, .82);   // navy translúcido (== --surface-solid)
+$g-border:    rgba(255, 255, 255, .10);
+$g-inner:     rgba(255, 255, 255, .06);
+$g-inner-bd:  rgba(255, 255, 255, .13);
+$g-heading:   #F6F8FC;                  // == --heading
+$g-text:      #E8EDF5;                  // == --text
+$g-muted:     #9AA6BC;                  // == --text-muted
+$g-accent:    #F97315;                  // == $brand
+$g-accent-lo: #FB8C3C;                  // == --brand-2
+$g-accent-hi: #E8620A;                  // == --brand-3
+$g-danger:    #FF7A7A;                  // == --danger
+$g-bp:        640px;

@@ -55,7 +55,10 @@
     // sessão inválida/expirada -> volta para o login
     if (res.status === 401 || res.status === 403) {
       try { await window.SB.auth.signOut(); } catch (e) {}
-      window.location.replace("login.html");
+      // evita loop: só redireciona se ainda NÃO estiver na tela de login
+      if (!/(^|\/)login\.html$/.test(window.location.pathname)) {
+        window.location.replace("login.html");
+      }
       throw new Error("Sessão expirada. Faça login novamente.");
     }
 
@@ -68,7 +71,7 @@
     }
 
     if (!res.ok) {
-      var msg = data && data.detail ? data.detail : "Erro " + res.status;
+      var msg = (data && (data.detail || data.error || data.message)) || ("Erro " + res.status);
       var err = new Error(msg);
       err.status = res.status;
       err.data = data;
@@ -99,6 +102,7 @@
     agendamentos: crud("agendamentos"),   // list({de,ate,status})
     projetos: crud("projetos"),           // list() já traz "membros"; create/update aceitam "membros"
     pagamentos: crud("pagamentos"),       // list({funcionario_id,competencia}); itens trazem "funcionario_nome"
+    jornadas: crud("jornadas"),           // list({funcionario_id,de,ate}); itens trazem "funcionario_nome"
 
     relatorios: {
       resumo: function (params) { return request("GET", "/api/relatorios/resumo", { params: params }); }, // {de,ate}

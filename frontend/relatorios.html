@@ -18,11 +18,12 @@
 
   <link rel="stylesheet" href="src/css/app.css">
 
- <!-- Supabase (CDN) + proteção de sessão -->
+ <!-- Supabase (CDN) + proteção de sessão.
+       Ordem: supabase -> config -> auth-guard -> layout -> sidebar -> dropdown -> utils -> ui -> api -> relatorios
+       Cadastro de registros/pagamentos via JC.modal (modal.js). -->
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="src/js/supabase.js"></script>
   <script defer src="src/js/config.js"></script>
-  <script defer src="src/js/api.js"></script>
   <script defer src="src/js/auth-guard.js"></script>
   <script defer src="src/js/layout.js"></script>
   <script defer src="src/js/sidebar.js"></script>
@@ -30,6 +31,7 @@
   <!-- utilitários compartilhados + UI (toast/confirm) -->
   <script defer src="src/js/utils.js"></script>
   <script defer src="src/js/ui.js"></script>
+  <script defer src="src/js/api.js"></script>
   <script defer src="src/js/modal.js"></script>
   <script defer src="src/js/relatorios.js"></script>
 
@@ -57,12 +59,29 @@
 
       <!-- Abas -->
       <div class="rel-tabs no-print" id="rel-tabs">
-        <button type="button" data-tab="pagamentos" class="active"><i class="bi bi-cash-coin" aria-hidden="true"></i> Pagamentos a funcionários</button>
+        <button type="button" data-tab="trabalho" class="active"><i class="bi bi-clock-history" aria-hidden="true"></i> Registro de trabalho</button>
+        <button type="button" data-tab="pagamentos"><i class="bi bi-cash-coin" aria-hidden="true"></i> Pagamentos a funcionários</button>
         <button type="button" data-tab="financeiro"><i class="bi bi-graph-up" aria-hidden="true"></i> Financeiro do mês</button>
       </div>
 
+      <!-- ABA: REGISTRO DE TRABALHO -->
+      <section id="tab-trabalho" class="rel-tab">
+        <div class="rel-toolbar no-print">
+          <label class="rel-field">
+            <span>Funcionário</span>
+            <select id="wk-func" class="rel-select"></select>
+          </label>
+          <label class="rel-field">
+            <span>Ano</span>
+            <select id="wk-ano" class="rel-select"></select>
+          </label>
+          <button type="button" class="btn-solid" id="wk-add"><i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar dia de trabalho</button>
+        </div>
+        <div id="wk-report" class="report-card"></div>
+      </section>
+
       <!-- ABA: PAGAMENTOS -->
-      <section id="tab-pagamentos" class="rel-tab">
+      <section id="tab-pagamentos" class="rel-tab" hidden>
         <div class="rel-toolbar no-print">
           <label class="rel-field">
             <span>Funcionário</span>
@@ -94,85 +113,6 @@
 
     </div>
 
-
-    <!-- MODAL: registrar pagamento -->
-    <div class="modal-overlay" id="modalOverlay">
-      <div class="modern-modal" role="dialog" aria-modal="true" aria-labelledby="pg-modal-title">
-
-        <div class="modal-header">
-          <div class="modal-title">
-            <h2 id="pg-modal-title">Registrar pagamento</h2>
-            <p>Lance um pagamento efetuado a um funcionário</p>
-          </div>
-          <button type="button" class="close-btn" onclick="closeModal()" aria-label="Fechar"><i class="ti ti-x" aria-hidden="true"></i></button>
-        </div>
-
-        <form class="modal-form" id="pg-form">
-          <input type="hidden" id="pf-id">
-          <div class="form-grid">
-
-            <div class="input-group full">
-              <label for="pf-func">Funcionário</label>
-              <select id="pf-func"></select>
-            </div>
-
-            <div class="input-group">
-              <label for="pf-tipo">Tipo de pagamento</label>
-              <select id="pf-tipo">
-                <option>Salário</option>
-                <option>Adiantamento</option>
-                <option>Bônus</option>
-                <option>Comissão</option>
-                <option>Vale</option>
-                <option>Férias</option>
-                <option>13º salário</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label for="pf-forma">Forma de pagamento</label>
-              <select id="pf-forma">
-                <option>Transferência</option>
-                <option>Pix</option>
-                <option>Dinheiro</option>
-                <option>Cartão</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label for="pf-data">Data do pagamento</label>
-              <input type="date" id="pf-data">
-            </div>
-
-            <div class="input-group">
-              <label for="pf-comp">Competência</label>
-              <input type="month" id="pf-comp">
-            </div>
-
-            <div class="input-group full">
-              <label for="pf-valor">Valor (R$)</label>
-              <input type="number" id="pf-valor" step="0.01" min="0" placeholder="0,00">
-            </div>
-
-            <div class="input-group full">
-              <label for="pf-obs">Detalhes</label>
-              <textarea id="pf-obs" rows="2" placeholder="Ex: referente ao mês, horas extras, meta atingida..."></textarea>
-            </div>
-
-            <div class="input-group full">
-              <p class="form-error" id="pf-error"></p>
-            </div>
-
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
-            <button type="submit" class="btn-save">Salvar pagamento</button>
-          </div>
-        </form>
-
-      </div>
-    </div>
 
   </main>
    

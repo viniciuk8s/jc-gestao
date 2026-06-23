@@ -22,14 +22,14 @@
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="src/js/supabase.js"></script>
   <script defer src="src/js/config.js"></script>
-  <script defer src="src/js/api.js"></script>
   <script defer src="src/js/auth-guard.js"></script>
   <script defer src="src/js/layout.js"></script>
   <script defer src="src/js/sidebar.js"></script>
   <script defer src="src/js/dropdown.js"></script>
-  <!-- utilitários compartilhados + UI (toast/confirm) -->
+  <!-- utilitários compartilhados + UI (toast/confirm) + modal dinâmico -->
   <script defer src="src/js/utils.js"></script>
   <script defer src="src/js/ui.js"></script>
+  <script defer src="src/js/api.js"></script>
   <script defer src="src/js/modal.js"></script>
   <script defer src="src/js/funcionarios.js"></script>
 
@@ -127,106 +127,6 @@
 
     </div>
 
-
-    <!-- MODAL -->
-    <div class="modal-overlay" id="modalOverlay">
-      <div class="modern-modal" role="dialog" aria-modal="true" aria-labelledby="hr-modal-title">
-
-        <div class="modal-header">
-          <div class="modal-title">
-            <h2 id="hr-modal-title">Novo funcionário</h2>
-            <p>Cadastre os dados do colaborador</p>
-          </div>
-          <button type="button" class="close-btn" onclick="closeModal()" aria-label="Fechar"><i class="ti ti-x" aria-hidden="true"></i></button>
-        </div>
-
-        <form class="modal-form" id="hr-form">
-          <input type="hidden" id="hf-id">
-          <div class="form-grid">
-
-            <div class="input-group full">
-              <label for="hf-nome">Nome completo</label>
-              <input type="text" id="hf-nome" placeholder="Ex: Maria Souza" autocomplete="off">
-            </div>
-
-            <div class="input-group">
-              <label for="hf-funcao">Função / Cargo</label>
-              <input type="text" id="hf-funcao" list="hr-funcoes" placeholder="Ex: Eletricista" autocomplete="off">
-              <datalist id="hr-funcoes">
-                <option value="Eletricista"></option>
-                <option value="Técnico em energia solar"></option>
-                <option value="Engenheiro eletricista"></option>
-                <option value="Auxiliar técnico"></option>
-                <option value="Gerente de obras"></option>
-                <option value="Vendedor"></option>
-                <option value="Administrativo"></option>
-                <option value="Financeiro"></option>
-              </datalist>
-            </div>
-
-            <div class="input-group">
-              <label for="hf-dep">Setor</label>
-              <select id="hf-dep">
-                <option>Elétrica</option>
-                <option>Solar</option>
-                <option>Administrativo</option>
-                <option>Comercial</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label for="hf-contrato">Tipo de contrato</label>
-              <select id="hf-contrato">
-                <option>CLT</option>
-                <option>PJ</option>
-                <option>Temporário</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label for="hf-status">Status</label>
-              <select id="hf-status">
-                <option value="ativo">Ativo</option>
-                <option value="ferias">Férias</option>
-                <option value="afastado">Afastado</option>
-                <option value="inativo">Inativo</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label for="hf-salario">Salário (R$)</label>
-              <input type="number" id="hf-salario" step="0.01" min="0" placeholder="0,00">
-            </div>
-
-            <div class="input-group">
-              <label for="hf-admissao">Data de admissão</label>
-              <input type="date" id="hf-admissao">
-            </div>
-
-            <div class="input-group">
-              <label for="hf-email">E-mail</label>
-              <input type="email" id="hf-email" placeholder="nome@empresa.com" autocomplete="off">
-            </div>
-
-            <div class="input-group">
-              <label for="hf-telefone">Telefone</label>
-              <input type="tel" id="hf-telefone" placeholder="(00) 00000-0000" autocomplete="off">
-            </div>
-
-            <div class="input-group full">
-              <p class="form-error" id="hr-form-error"></p>
-            </div>
-
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
-            <button type="submit" class="btn-save">Salvar funcionário</button>
-          </div>
-        </form>
-
-      </div>
-    </div>
 
   </main>
    

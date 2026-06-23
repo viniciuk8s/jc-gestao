@@ -1,0 +1,23 @@
+/* ============================================================
+   _headings.scss — Tipografia de títulos
+   Define a fonte do corpo e deixa os nomes apresentativos (h1)
+   em CAIXA ALTA, com a fonte de display moderna.
+   Importe depois de _variables:  @use 'headings';
+   ============================================================ */
+
+body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1 {
+  font-family: var(--font-display);
+  text-transform: uppercase;     // nomes apresentativos em caixa alta
+  letter-spacing: .045em;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+// Subtítulos de seção mantêm a fonte de display, sem caixa alta
+h2, h3 { font-family: var(--font-display); }

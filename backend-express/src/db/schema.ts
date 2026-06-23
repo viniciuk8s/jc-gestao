@@ -14,6 +14,10 @@ export const funcionarios = pgTable("funcionarios", {
   status: varchar("status", { length: 20 }).default("ativo"), // ativo | ferias | afastado | inativo
   email: varchar("email", { length: 160 }),
   telefone: varchar("telefone", { length: 40 }),
+  foto: text("foto"),                                      // URL pública (Storage) ou dataURL
+  cpf: varchar("cpf", { length: 20 }),                     // '000.000.000-00'
+  nascimento: date("nascimento", { mode: "string" }),
+  endereco: varchar("endereco", { length: 200 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -76,6 +80,19 @@ export const pagamentos = pgTable("pagamentos", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const jornadas = pgTable("jornadas", {
+  id: serial("id").primaryKey(),
+  funcionarioId: integer("funcionario_id")
+    .references(() => funcionarios.id, { onDelete: "set null" }),
+  data: date("data", { mode: "string" }).notNull(),
+  entrada: varchar("entrada", { length: 5 }),              // 'HH:MM'
+  saida: varchar("saida", { length: 5 }),                  // 'HH:MM'
+  atividade: text("atividade"),
+  despesa: numeric("despesa", { precision: 12, scale: 2 }).default("0"),
+  despesaDesc: varchar("despesa_desc", { length: 160 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Tipos inferidos (linha lida / linha para inserir) — usados pelos routers.
 export type Funcionario = typeof funcionarios.$inferSelect;
 export type NovoFuncionario = typeof funcionarios.$inferInsert;
@@ -88,3 +105,5 @@ export type Agendamento = typeof agendamentos.$inferSelect;
 export type NovoAgendamento = typeof agendamentos.$inferInsert;
 export type Pagamento = typeof pagamentos.$inferSelect;
 export type NovoPagamento = typeof pagamentos.$inferInsert;
+export type Jornada = typeof jornadas.$inferSelect;
+export type NovaJornada = typeof jornadas.$inferInsert;

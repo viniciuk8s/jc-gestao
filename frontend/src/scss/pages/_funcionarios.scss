@@ -199,3 +199,47 @@
   .hr-summary { grid-template-columns: 1fr; }
   .hr-sum { padding: 14px 16px; }
 }
+/* ============================================================
+   Foto do funcionário no avatar (cards e lista)
+   ============================================================ */
+.hr-avatar.has-photo {
+  background-size: cover;
+  background-position: center;
+  color: transparent;                       // esconde as iniciais quando há foto
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+}
+
+/* ============================================================
+   Mobile (cara de app): a lista vira cards
+   ============================================================ */
+@include respond(720px) {
+  .hr-table thead { display: none; }
+  .hr-table, .hr-table tbody, .hr-table tr, .hr-table td { display: block; width: 100%; }
+  .hr-table tr {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 6px 14px;
+    margin-bottom: 10px;
+  }
+  .hr-table td {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding: 10px 0; text-align: right;
+    border: none; border-bottom: 1px solid var(--line);
+  }
+  .hr-table tr td:last-child { border-bottom: none; }
+  .hr-table td::before {
+    content: attr(data-label);
+    flex: none; text-align: left;
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  // a célula do funcionário (avatar + nome) ocupa a linha toda, sem rótulo
+  .hr-table td:first-child { justify-content: flex-start; }
+  .hr-table td:first-child::before { display: none; }
+  .hr-table td.col-act { justify-content: flex-end; }
+  .hr-table td.col-act::before { display: none; }
+  // estado vazio não vira card
+  .hr-table td[colspan] { display: block; text-align: center; border: none; }
+  .hr-table td[colspan]::before { display: none; }
+}

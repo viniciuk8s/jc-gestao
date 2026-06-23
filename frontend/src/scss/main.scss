@@ -10,6 +10,10 @@
 @use 'base/reset';
 @use 'base/base';
 
+// headings emite CSS próprio (não é só tokens), por isso é @use explícito
+@use 'abstracts/headings';
+
+
 // 3) Layout
 @use 'layout/main';
 @use 'layout/sidebar';
@@ -21,8 +25,9 @@
 @use 'components/badges';
 @use 'components/forms';
 @use 'components/dropdown';
-@use 'components/modal';
+@use 'components/agenda-modal';
 @use 'components/table';
+@use 'components/modal';
 
 // 5) Páginas
 @use 'pages/painel';

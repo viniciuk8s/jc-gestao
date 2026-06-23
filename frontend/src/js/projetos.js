@@ -1,60 +1,67 @@
 /* ============================================================
    projetos.js — Gestão de Projetos (Kanban)
-   localStorage, arrastar-e-soltar entre colunas, filtros,
-   envolvidos (funcionários + terceiros), progresso e prazo.
+   100% conectado ao back-end (JC.api.projetos). Arrastar-e-soltar
+   entre colunas (persiste via PUT), filtros, envolvidos
+   (funcionários da API + terceiros), progresso e prazo.
+
+   Contrato (GET /api/projetos):
+     { id:int, nome, cliente, setor, status, prioridade, entrega('AAAA-MM-DD'|null),
+       progresso:int, descricao, createdAt, membros:[{id,nome,tipo}] }
+   Envio (POST/PUT): { nome, cliente, setor, status, prioridade, entrega,
+                       progresso, descricao, membros:[{nome,tipo}] }
    ============================================================ */
 'use strict';
 
 (function () {
   if (!document.getElementById('kanban')) return;
 
-  var KEY = 'jc_projetos';
   var STATUSES = ['planejamento', 'andamento', 'revisao', 'concluido'];
+  var STATUS_LABEL = { planejamento: 'Planejamento', andamento: 'Em execução', revisao: 'Em revisão', concluido: 'Concluído' };
   var PRIO_LABEL = { alta: 'Alta', media: 'Média', baixa: 'Baixa' };
 
   var JC = window.JC;
-  // Helpers compartilhados (ver utils.js)
-  var esc = JC.esc, fmtDateBR = JC.fmtDateShort;   // projetos usa data curta (DD/MM)
+  var esc = JC.esc, fmtDateBR = JC.fmtDateShort;   // data curta (DD/MM)
   var initials = JC.initials, colorFor = JC.color;
-  var gv = JC.val, gvSet = JC.setVal;
 
   var state = {
-    projs: load(),
+    projs: [],
+    emps: [],          // nomes de funcionários (da API) p/ os chips de envolvidos
     busca: '',
     setor: 'todos',
-    prio: 'todos'
+    prio: 'todos',
+    carregando: true
   };
 
-  // seleção temporária enquanto o modal está aberto
-  var picked = { funcs: [], terceiros: [] };
+  function recurso() { return JC.api.projetos; }
 
-  /* ---------- Persistência ---------- */
-  function load() {
-    try { var raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch (e) {}
-    return seed();
-  }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state.projs)); } catch (e) {} }
-  function seed() {
-    var base = [
-      { nome: 'Usina solar — Galpão Industrial', cliente: 'Indústria Norte', setor: 'Solar', status: 'andamento', prio: 'alta', entrega: '2026-06-20', progresso: 60, descricao: '', envolvidos: [{ nome: 'Carlos Lima', tipo: 'funcionario' }, { nome: 'Rafael Gomes', tipo: 'funcionario' }, { nome: 'Cooperativa Solar', tipo: 'terceiro' }] },
-      { nome: 'Reforma elétrica — Mercado São José', cliente: 'Mercado São José', setor: 'Elétrica', status: 'revisao', prio: 'media', entrega: '2026-06-15', progresso: 85, descricao: '', envolvidos: [{ nome: 'João Pedro', tipo: 'funcionario' }, { nome: 'Maria Souza', tipo: 'funcionario' }] },
-      { nome: 'Projeto fotovoltaico — Padaria', cliente: 'Padaria Pão Quente', setor: 'Solar', status: 'planejamento', prio: 'media', entrega: '', progresso: 15, descricao: '', envolvidos: [{ nome: 'Maria Souza', tipo: 'funcionario' }] },
-      { nome: 'Quadro de distribuição — Aldeota', cliente: 'Residência Aldeota', setor: 'Elétrica', status: 'concluido', prio: 'baixa', entrega: '2026-06-05', progresso: 100, descricao: '', envolvidos: [{ nome: 'João Pedro', tipo: 'funcionario' }] },
-      { nome: 'Proposta comercial — Condomínio', cliente: 'Cond. Vila Verde', setor: 'Comercial', status: 'planejamento', prio: 'alta', entrega: '2026-06-12', progresso: 30, descricao: '', envolvidos: [{ nome: 'Ana Beatriz', tipo: 'funcionario' }] }
-    ];
-    return base.map(function (p, i) { p.id = 'p' + (Date.now() + i); return p; });
-  }
-
-  /* ---------- Funcionários (da base de RH) ---------- */
-  function getEmployees() {
+  /* ---------- Carregamento (API) ---------- */
+  async function carregar() {
+    state.carregando = true;
+    render();
     try {
-      var raw = localStorage.getItem('jc_funcionarios');
-      if (raw) {
-        var arr = JSON.parse(raw);
-        if (arr && arr.length) return arr.map(function (f) { return f.nome; });
-      }
-    } catch (e) {}
-    return ['Maria Souza', 'Carlos Lima', 'João Pedro', 'Ana Beatriz', 'Rafael Gomes', 'Patrícia Nunes'];
+      var lista = await recurso().list();
+      state.projs = (lista || []).map(function (p) {
+        p.progresso = Number(p.progresso) || 0;
+        p.membros = p.membros || [];
+        return p;
+      });
+    } catch (e) {
+      console.error('Falha ao carregar projetos:', e);
+      JC.toast('Não foi possível carregar os projetos.', 'error');
+      state.projs = [];
+    }
+    state.carregando = false;
+    render();
+  }
+
+  // Funcionários cadastrados (para o seletor de envolvidos) — direto da API
+  async function carregarFuncionarios() {
+    try {
+      var lista = await JC.api.funcionarios.list();
+      state.emps = (lista || []).map(function (f) { return f.nome; });
+    } catch (e) {
+      state.emps = []; // sem funcionários cadastrados ainda
+    }
   }
 
   /* ---------- Helpers ---------- */
@@ -64,12 +71,11 @@
     return new Date(p.entrega + 'T00:00:00') < hoje;
   }
 
-  /* ---------- Filtro ---------- */
   function passesFilter(p) {
     var q = state.busca.toLowerCase();
     if (state.setor !== 'todos' && p.setor !== state.setor) return false;
-    if (state.prio !== 'todos' && p.prio !== state.prio) return false;
-    if (q && (p.nome + ' ' + (p.cliente || '')).toLowerCase().indexOf(q) === -1) return false;
+    if (state.prio !== 'todos' && p.prioridade !== state.prio) return false;
+    if (q && ((p.nome || '') + ' ' + (p.cliente || '')).toLowerCase().indexOf(q) === -1) return false;
     return true;
   }
 
@@ -79,23 +85,18 @@
       var col = document.getElementById('col-' + st);
       var cnt = document.getElementById('cnt-' + st);
       if (!col) return;
+      if (state.carregando) { col.innerHTML = '<div class="kb-empty">Carregando…</div>'; if (cnt) cnt.textContent = '0'; return; }
       var items = state.projs.filter(function (p) { return p.status === st && passesFilter(p); });
       if (cnt) cnt.textContent = items.length;
-
-      if (items.length === 0) {
-        col.innerHTML = '<div class="kb-empty">Sem projetos</div>';
-      } else {
-        col.innerHTML = items.map(cardHTML).join('');
-      }
-      bindCards(col);
+      col.innerHTML = items.length === 0 ? '<div class="kb-empty">Sem projetos</div>' : items.map(cardHTML).join('');
     });
   }
 
-  function avatarsHTML(envolvidos) {
-    if (!envolvidos || !envolvidos.length) return '';
+  function avatarsHTML(membros) {
+    if (!membros || !membros.length) return '';
     var max = 4;
-    var shown = envolvidos.slice(0, max);
-    var rest = envolvidos.length - shown.length;
+    var shown = membros.slice(0, max);
+    var rest = membros.length - shown.length;
     var html = shown.map(function (e) {
       if (e.tipo === 'terceiro') {
         return '<span class="pj-av terceiro" title="' + esc(e.nome) + ' (terceiro)">' + esc(initials(e.nome)) + '</span>';
@@ -118,7 +119,7 @@
     var prog = Math.max(0, Math.min(100, Number(p.progresso || 0)));
     var done = p.status === 'concluido' ? ' done' : '';
     return '' +
-    '<div class="kb-card prio-' + p.prio + done + '" draggable="true" data-id="' + p.id + '">' +
+    '<div class="kb-card prio-' + p.prioridade + done + '" draggable="true" data-id="' + p.id + '">' +
       '<div class="kb-card-head">' +
         '<div class="kb-card-title">' + esc(p.nome) + '</div>' +
         '<div class="kb-card-actions">' +
@@ -127,234 +128,175 @@
         '</div>' +
       '</div>' +
       (p.cliente ? '<div class="kb-card-client"><i class="bi bi-building"></i> ' + esc(p.cliente) + '</div>' : '') +
-      '<span class="kb-tag">' + esc(p.setor) + '</span>' +
+      '<span class="kb-tag">' + esc(p.setor || '—') + '</span>' +
       '<div class="pj-prog">' +
         '<div class="pj-prog-meta"><span>Progresso</span><span>' + prog + '%</span></div>' +
         '<div class="pj-prog-track"><div class="pj-prog-bar" style="width:' + prog + '%"></div></div>' +
       '</div>' +
       '<div class="kb-card-foot">' +
         dueHTML(p) +
-        avatarsHTML(p.envolvidos) +
+        avatarsHTML(p.membros) +
       '</div>' +
     '</div>';
   }
 
-  function bindCards(scope) {
-    scope.querySelectorAll('.pj-edit').forEach(function (b) {
-      b.addEventListener('click', function (e) { e.stopPropagation(); openEdit(b.dataset.id); });
+  /* ---------- Delegação de eventos do quadro (1 listener por coluna) ---------- */
+  function bindColumn(col) {
+    col.addEventListener('click', function (e) {
+      var ed = e.target.closest('.pj-edit');
+      if (ed) { e.stopPropagation(); var p = state.projs.find(function (x) { return String(x.id) === ed.dataset.id; }); if (p) openForm(p); return; }
+      var dl = e.target.closest('.pj-del');
+      if (dl) { e.stopPropagation(); removeProj(dl.dataset.id); }
     });
-    scope.querySelectorAll('.pj-del').forEach(function (b) {
-      b.addEventListener('click', function (e) { e.stopPropagation(); removeProj(b.dataset.id); });
+    col.addEventListener('dragstart', function (e) {
+      var card = e.target.closest('.kb-card'); if (!card) return;
+      card.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', card.dataset.id);
+      e.dataTransfer.effectAllowed = 'move';
     });
-    scope.querySelectorAll('.kb-card').forEach(function (card) {
-      card.addEventListener('dragstart', function (e) {
-        card.classList.add('dragging');
-        e.dataTransfer.setData('text/plain', card.dataset.id);
-        e.dataTransfer.effectAllowed = 'move';
-      });
-      card.addEventListener('dragend', function () { card.classList.remove('dragging'); });
+    col.addEventListener('dragend', function (e) {
+      var card = e.target.closest('.kb-card'); if (card) card.classList.remove('dragging');
     });
   }
 
-  /* ---------- Drag & drop nas colunas ---------- */
+  /* ---------- Drag & drop entre colunas (persiste via PUT) ---------- */
   function initDnD() {
     STATUSES.forEach(function (st) {
       var col = document.getElementById('col-' + st);
       if (!col) return;
+      bindColumn(col);
       col.addEventListener('dragover', function (e) { e.preventDefault(); col.classList.add('drop'); });
-      col.addEventListener('dragleave', function (e) {
-        if (!col.contains(e.relatedTarget)) col.classList.remove('drop');
-      });
-      col.addEventListener('drop', function (e) {
+      col.addEventListener('dragleave', function (e) { if (!col.contains(e.relatedTarget)) col.classList.remove('drop'); });
+      col.addEventListener('drop', async function (e) {
         e.preventDefault();
         col.classList.remove('drop');
         var id = e.dataTransfer.getData('text/plain');
-        var p = state.projs.find(function (x) { return x.id === id; });
-        if (p && p.status !== st) {
-          p.status = st;
-          if (st === 'concluido') p.progresso = 100;
-          save();
-          render();
+        var p = state.projs.find(function (x) { return String(x.id) === id; });
+        if (!p || p.status === st) return;
+        var antesStatus = p.status, antesProg = p.progresso;
+        // otimista: atualiza UI já; reverte se a API falhar
+        p.status = st;
+        if (st === 'concluido') p.progresso = 100;
+        render();
+        try {
+          var body = { status: st };
+          if (st === 'concluido') body.progresso = 100;
+          await recurso().update(id, body);
+        } catch (err) {
+          console.error(err);
+          p.status = antesStatus; p.progresso = antesProg; render();
+          JC.toast(err && err.message ? err.message : 'Não foi possível mover o projeto.', 'error');
         }
       });
     });
   }
 
-  /* ---------- CRUD ---------- */
+  /* ---------- Excluir (API) ---------- */
   function removeProj(id) {
-    var p = state.projs.find(function (x) { return x.id === id; });
+    var p = state.projs.find(function (x) { return String(x.id) === String(id); });
     if (!p) return;
-    JC.confirm({ message: 'Excluir o projeto "' + p.nome + '"?', confirmText: 'Excluir', danger: true }).then(function (ok) {
+    JC.confirm({ message: 'Excluir o projeto "' + p.nome + '"?', confirmText: 'Excluir', danger: true }).then(async function (ok) {
       if (!ok) return;
-      state.projs = state.projs.filter(function (x) { return x.id !== id; });
-      save(); render();
-      JC.toast('Projeto excluído.', 'success');
+      try {
+        await recurso().remove(id);
+        JC.toast('Projeto excluído.', 'success');
+        await carregar();
+      } catch (e) {
+        console.error(e);
+        JC.toast(e && e.message ? e.message : 'Erro ao excluir.', 'error');
+      }
     });
   }
 
-  function openNew() {
-    setTitle('Novo projeto');
-    gvSet('pf-id', '');
-    ['pf-nome', 'pf-cliente', 'pf-desc'].forEach(function (id) { gvSet(id, ''); });
-    gvSet('pf-setor', 'Elétrica');
-    gvSet('pf-status', 'planejamento');
-    gvSet('pf-prio', 'media');
-    gvSet('pf-entrega', '');
-    gvSet('pf-prog', 0);
-    updateProgLabel();
-    picked = { funcs: [], terceiros: [] };
-    renderPick(); renderTerceiros();
-    clearErr();
-    if (window.openModal) window.openModal();
-  }
+  /* ---------- Cadastro / edição (modal dinâmico) ---------- */
+  function openForm(p) {
+    p = p || {};
+    var editId = p.id || '';
+    var emps = state.emps;
+    var membros = p.membros || [];
+    var funcSel = membros.filter(function (e) { return e.tipo === 'funcionario'; }).map(function (e) { return e.nome; });
+    var tercSel = membros.filter(function (e) { return e.tipo === 'terceiro'; }).map(function (e) { return e.nome; });
 
-  function openEdit(id) {
-    var p = state.projs.find(function (x) { return x.id === id; });
-    if (!p) return;
-    setTitle('Editar projeto');
-    gvSet('pf-id', p.id);
-    gvSet('pf-nome', p.nome);
-    gvSet('pf-cliente', p.cliente || '');
-    gvSet('pf-setor', p.setor);
-    gvSet('pf-status', p.status);
-    gvSet('pf-prio', p.prio);
-    gvSet('pf-entrega', p.entrega || '');
-    gvSet('pf-prog', p.progresso || 0);
-    gvSet('pf-desc', p.descricao || '');
-    updateProgLabel();
-    picked = {
-      funcs: (p.envolvidos || []).filter(function (e) { return e.tipo === 'funcionario'; }).map(function (e) { return e.nome; }),
-      terceiros: (p.envolvidos || []).filter(function (e) { return e.tipo === 'terceiro'; }).map(function (e) { return e.nome; })
-    };
-    renderPick(); renderTerceiros();
-    clearErr();
-    if (window.openModal) window.openModal();
-  }
+    JC.modal.open({
+      title: editId ? 'Editar projeto' : 'Novo projeto',
+      subtitle: 'Defina os dados, o prazo e quem está envolvido',
+      submitText: editId ? 'Salvar alterações' : 'Criar projeto',
+      maxWidth: '600px',
+      fields: [
+        { type: 'section', label: 'Projeto' },
+        { id: 'nome', label: 'Nome do projeto', type: 'text', required: true, value: p.nome || '', placeholder: 'Ex: Usina solar — Galpão Industrial' },
+        { id: 'cliente', label: 'Cliente', type: 'text', half: true, value: p.cliente || '', placeholder: 'Ex: Indústria Norte' },
+        { id: 'setor', label: 'Setor', type: 'select', half: true, value: p.setor || 'Elétrica', options: ['Elétrica', 'Solar', 'Administrativo', 'Comercial'] },
+        { id: 'status', label: 'Status', type: 'select', half: true, value: p.status || 'planejamento',
+          options: [{ value: 'planejamento', label: 'Planejamento' }, { value: 'andamento', label: 'Em execução' }, { value: 'revisao', label: 'Em revisão' }, { value: 'concluido', label: 'Concluído' }] },
+        { id: 'prioridade', label: 'Prioridade', type: 'select', half: true, value: p.prioridade || 'media',
+          options: [{ value: 'baixa', label: 'Baixa' }, { value: 'media', label: 'Média' }, { value: 'alta', label: 'Alta' }] },
+        { id: 'entrega', label: 'Data de entrega', type: 'date', half: true, value: p.entrega || '', hint: 'Em branco = sem prazo.' },
+        { id: 'progresso', label: 'Progresso', type: 'range', min: 0, max: 100, step: 5, suffix: '%', value: p.progresso != null ? p.progresso : 0 },
 
-  function submitForm(e) {
-    if (e) e.preventDefault();
-    var nome = gv('pf-nome');
-    if (!nome) { setErr('Informe o nome do projeto.'); return; }
-    clearErr();
+        { type: 'section', label: 'Envolvidos' },
+        { id: 'funcs', label: 'Funcionários', type: 'chips', value: funcSel,
+          options: emps.map(function (n) { return { value: n, label: n, avatar: { color: colorFor(n), initials: initials(n) } }; }),
+          hint: emps.length ? 'Toque para incluir/remover.' : 'Cadastre funcionários para escolher aqui.' },
+        { id: 'terceiros', label: 'Terceiros / parceiros', type: 'tags', value: tercSel, placeholder: 'Nome do terceiro / empresa parceira', addText: 'Adicionar' },
 
-    var envolvidos = picked.funcs.map(function (n) { return { nome: n, tipo: 'funcionario' }; })
-      .concat(picked.terceiros.map(function (n) { return { nome: n, tipo: 'terceiro' }; }));
+        { type: 'section', label: 'Descrição' },
+        { id: 'descricao', label: 'Descrição', type: 'textarea', rows: 3, value: p.descricao || '', placeholder: 'Escopo, observações...' }
+      ],
+      onSubmit: async function (vals) {
+        var nome = String(vals.nome || '').trim();
+        if (!nome) throw new Error('Informe o nome do projeto.');
 
-    var dados = {
-      nome: nome,
-      cliente: gv('pf-cliente'),
-      setor: gv('pf-setor'),
-      status: gv('pf-status'),
-      prio: gv('pf-prio'),
-      entrega: gv('pf-entrega'),
-      progresso: Number(gv('pf-prog') || 0),
-      descricao: gv('pf-desc'),
-      envolvidos: envolvidos
-    };
-    if (dados.status === 'concluido') dados.progresso = 100;
+        var membrosOut = (vals.funcs || []).map(function (n) { return { nome: n, tipo: 'funcionario' }; })
+          .concat((vals.terceiros || []).map(function (n) { return { nome: n, tipo: 'terceiro' }; }));
 
-    var id = gv('pf-id');
-    if (id) {
-      var p = state.projs.find(function (x) { return x.id === id; });
-      if (p) Object.assign(p, dados);
-    } else {
-      dados.id = 'p' + Date.now();
-      state.projs.push(dados);
-    }
-    save(); render();
-    JC.toast(id ? 'Projeto atualizado.' : 'Projeto criado.', 'success');
-    if (window.closeModal) window.closeModal();
-  }
+        var prog = Number(vals.progresso || 0);
+        var body = {
+          nome: nome,
+          cliente: String(vals.cliente || '').trim() || null,
+          setor: vals.setor,
+          status: vals.status,
+          prioridade: vals.prioridade,
+          entrega: vals.entrega || null,
+          progresso: vals.status === 'concluido' ? 100 : prog,
+          descricao: String(vals.descricao || '').trim() || null,
+          membros: membrosOut
+        };
 
-  /* ---------- Modal: seletores de envolvidos ---------- */
-  function renderPick() {
-    var box = document.getElementById('pf-funcs');
-    if (!box) return;
-    var emps = getEmployees();
-    box.innerHTML = emps.map(function (nome) {
-      var on = picked.funcs.indexOf(nome) !== -1;
-      return '<button type="button" class="pick' + (on ? ' on' : '') + '" data-nome="' + esc(nome) + '">' +
-        '<span class="av" style="background:' + colorFor(nome) + '">' + esc(initials(nome)) + '</span>' +
-        esc(nome) + '</button>';
-    }).join('');
-    box.querySelectorAll('.pick').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var nome = b.dataset.nome;
-        var i = picked.funcs.indexOf(nome);
-        if (i === -1) picked.funcs.push(nome); else picked.funcs.splice(i, 1);
-        b.classList.toggle('on');
-      });
+        if (editId) await recurso().update(editId, body);
+        else await recurso().create(body);
+        JC.toast(editId ? 'Projeto atualizado.' : 'Projeto criado.', 'success');
+        await carregar();
+      }
     });
-  }
-
-  function renderTerceiros() {
-    var box = document.getElementById('pf-terceiros');
-    if (!box) return;
-    box.innerHTML = picked.terceiros.map(function (nome, idx) {
-      return '<span class="chip">' + esc(nome) +
-        '<button type="button" data-idx="' + idx + '" aria-label="Remover">&times;</button></span>';
-    }).join('');
-    box.querySelectorAll('button[data-idx]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        picked.terceiros.splice(Number(b.dataset.idx), 1);
-        renderTerceiros();
-      });
-    });
-  }
-
-  function addTerceiro() {
-    var inp = document.getElementById('pf-terc-input');
-    if (!inp) return;
-    var v = inp.value.trim();
-    if (!v) return;
-    if (picked.terceiros.indexOf(v) === -1) picked.terceiros.push(v);
-    inp.value = '';
-    renderTerceiros();
-    inp.focus();
   }
 
   /* ---------- Exportar CSV ---------- */
   function exportCSV() {
-    var STAT = { planejamento: 'Planejamento', andamento: 'Em execução', revisao: 'Em revisão', concluido: 'Concluído' };
     var head = ['Projeto', 'Cliente', 'Setor', 'Status', 'Prioridade', 'Entrega', 'Progresso', 'Envolvidos'];
     var lines = [head.join(';')];
     state.projs.filter(passesFilter).forEach(function (p) {
-      var env = (p.envolvidos || []).map(function (e) { return e.nome; }).join(', ');
+      var env = (p.membros || []).map(function (e) { return e.nome; }).join(', ');
       lines.push([
-        '"' + p.nome.replace(/"/g, '""') + '"',
-        '"' + (p.cliente || '').replace(/"/g, '""') + '"',
-        p.setor, STAT[p.status], PRIO_LABEL[p.prio],
+        JC.csvCell(p.nome), JC.csvCell(p.cliente || ''),
+        p.setor || '', STATUS_LABEL[p.status] || p.status, PRIO_LABEL[p.prioridade] || p.prioridade,
         p.entrega ? fmtDateBR(p.entrega) : 'Sem prazo',
         (p.progresso || 0) + '%',
-        '"' + env.replace(/"/g, '""') + '"'
+        JC.csvCell(env)
       ].join(';'));
     });
     JC.saveCSV('projetos-' + new Date().toISOString().slice(0, 10) + '.csv', lines);
   }
 
-  /* ---------- Form helpers ---------- */
-  function setTitle(t) { var el = document.getElementById('pj-modal-title'); if (el) el.textContent = t; }
-  function setErr(m) { var el = document.getElementById('pf-error'); if (el) el.textContent = m; }
-  function clearErr() { setErr(''); }
-  function updateProgLabel() {
-    var el = document.getElementById('pf-prog-val');
-    if (el) el.textContent = (gv('pf-prog') || 0) + '%';
-  }
-
   /* ---------- Eventos ---------- */
-  document.getElementById('pj-busca')?.addEventListener('input', function (e) { state.busca = e.target.value; render(); });
+  document.getElementById('pj-busca')?.addEventListener('input', JC.debounce(function (e) { state.busca = e.target.value; render(); }, 200));
   document.getElementById('pj-setor')?.addEventListener('change', function (e) { state.setor = e.target.value; render(); });
   document.getElementById('pj-prio')?.addEventListener('change', function (e) { state.prio = e.target.value; render(); });
-  document.getElementById('pj-add')?.addEventListener('click', openNew);
+  document.getElementById('pj-add')?.addEventListener('click', function () { openForm(); });
   document.getElementById('pj-export')?.addEventListener('click', exportCSV);
-  document.getElementById('pj-form')?.addEventListener('submit', submitForm);
-  document.getElementById('pf-prog')?.addEventListener('input', updateProgLabel);
-  document.getElementById('pf-terc-btn')?.addEventListener('click', addTerceiro);
-  document.getElementById('pf-terc-input')?.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') { e.preventDefault(); addTerceiro(); }
-  });
 
   /* ---------- Init ---------- */
   initDnD();
-  render();
+  carregarFuncionarios();
+  carregar();
 })();

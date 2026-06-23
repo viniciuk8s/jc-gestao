@@ -1,6 +1,7 @@
 /* ============================================================
    dropdown.js
    Menu suspenso do perfil (abrir/fechar) e busca.
+   O logout é tratado no layout.js (signOut do Supabase + redirect).
    ============================================================ */
 'use strict';
 
@@ -27,11 +28,6 @@
     document.getElementById('searchInput')?.focus();
   }
 
-  function logout() {
-    closeDropdown();
-    alert('Você saiu da conta com sucesso!');
-  }
-
   // Fecha ao clicar fora do perfil
   document.addEventListener('click', (e) => {
     const wrap = profileBtn?.closest('.profile-wrap');
@@ -46,5 +42,5 @@
   // Exposição para handlers inline
   window.toggleDropdown = toggleDropdown;
   window.focusSearch = focusSearch;
-  window.logout = logout;
+  // (logout removido daqui — fica a cargo do layout.js)
 })();

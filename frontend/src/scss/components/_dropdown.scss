@@ -1,11 +1,10 @@
 // ============================================================
-//  components/_dropdown.scss — perfil + menu suspenso
+//  components/_dropdown.scss — perfil + menu suspenso (conta)
 //  origem: dropdown.css
 // ============================================================
 @use '../abstracts' as *;
 
-// NOTA: só o :hover do .icon-btn vive aqui. A base .icon-btn está
-// duplicada em funcionarios/projetos — candidata a virar componente.
+// NOTA: só o :hover do .icon-btn vive aqui. A base .icon-btn é o componente.
 .icon-btn:hover {
   background: var(--surface-2);
   color: var(--text);
@@ -17,12 +16,10 @@
 }
 
 // ---------- Perfil ----------
-.profile-wrap {
-  position: relative;
-  margin-top: 30px;
-}
+.profile-wrap { position: relative; margin-top: 30px; }
 
 .profile-btn {
+  margin-top: 40px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -32,12 +29,6 @@
   cursor: pointer;
   user-select: none;
   transition: border-color var(--transition), background var(--transition);
-
-  &:hover,
-  &.active {
-    border-color: var(--brand-line);
-    background: var(--surface-3);
-  }
 
   &.active .chevron { transform: rotate(180deg); }
 }
@@ -78,12 +69,11 @@
   transition: transform .22s var(--ease);
 }
 
-// ---------- Dropdown ----------
+// ---------- Dropdown (.dropdown utilitário) ----------
 .dropdown {
   position: absolute;
-  margin-top: -100px;
   margin-left: 320px;
-  width: 230px;
+  max-width: 400px;
   z-index: var(--z-toast);
   border: 1px solid var(--border-strong);
   border-radius: var(--r-lg);
@@ -97,16 +87,9 @@
   pointer-events: none;
   transition: opacity .2s var(--ease), transform .2s var(--ease);
 
-  &.open {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    pointer-events: all;
-  }
+  &.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
 
-  @include respond('lg') {
-    margin-top: 0;
-    margin-left: 0;
-  }
+  @include respond('lg') { margin-top: 0; margin-left: 0; }
 }
 
 .dd-header {
@@ -116,9 +99,7 @@
   gap: 12px;
   border-bottom: 1px solid var(--border);
 }
-
 .dd-body { padding: 8px; }
-
 .dd-item {
   display: flex;
   align-items: center;
@@ -144,15 +125,55 @@
     &:hover { background: var(--danger-soft); color: var(--danger); }
   }
 }
-
-.dd-sep {
-  height: 1px;
-  margin: 6px 0;
-  background: var(--border);
-}
+.dd-sep { height: 1px; margin: 6px 0; background: var(--border); }
 
 // Escala mobile (de responsive.css)
 @include respond('md') {
   .profile-name { font-size: 17px; }
   .profile-role { font-size: 13px; }
+}
+
+/* ============================================================
+   #dropdown — aparência (vidro) + ancoragem ao botão de perfil.
+   Por #id, vence o posicionamento do app.css se houver divergência.
+   ============================================================ */
+#dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  width: auto;
+  min-width: 220px;
+  max-width: 100%;
+  border-radius: 14px;
+  z-index: 70;
+
+  background: rgba(16, 26, 40, .85);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  backdrop-filter: blur(18px) saturate(135%);
+  border: 1px solid rgba(255, 255, 255, .10);
+  box-shadow: 0 22px 54px -16px rgba(0, 0, 0, .6);
+  color: #E8EDF5;
+
+  .dd-header {
+    color: #E8EDF5;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    strong { color: #F6F8FC; }
+    small  { color: #9AA6BC; }
+  }
+
+  .dd-item {
+    color: #D7DEEA;
+    background: transparent;
+    transition: background .15s, color .15s;
+    &:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+    &.logout { color: #FF8A8A; &:hover { background: rgba(255, 122, 122, .12); color: #FFB3B3; } }
+    i, .ti, .bi { color: inherit; }
+  }
+
+  .dd-sep { background: rgba(255, 255, 255, .08); }
+}
+
+@include respond('md') {
+  #dropdown { left: 0; right: 0; min-width: 0; }
 }

@@ -1,18 +1,18 @@
 /* ============================================================
-   relatorios.js — Relatórios
-   1) Pagamentos a funcionários (relatório único por pessoa)
-   2) Financeiro do mês (a partir do fluxo de caixa)
+   relatorios.js — Relatórios (100% conectado ao back-end)
+   1) Registro de trabalho (jornadas)  → JC.api.jornadas
+   2) Pagamentos a funcionários        → JC.api.pagamentos
+   3) Financeiro do mês                → JC.api.lancamentos + pagamentos
+   Funcionários (jornadas e pagamentos) são referenciados por ID (FK).
    ============================================================ */
 'use strict';
 
 (function () {
   if (!document.getElementById('rel-tabs')) return;
 
-  var KEY_PAG = 'jc_pagamentos';
   var MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   var JC = window.JC;
-  // Helpers compartilhados (ver utils.js)
   var esc = JC.esc, fmt = JC.brl;
   var fmtDateBR = JC.fmtDate, fmtComp = JC.fmtComp;
   var initials = JC.initials, colorFor = JC.color;
@@ -20,59 +20,62 @@
 
   var hoje = new Date();
   var state = {
-    tab: 'pagamentos',
-    pgFunc: '',
+    tab: 'trabalho',
+    wkFunc: '',                 // jornadas: por ID (FK)
+    wkAno: String(hoje.getFullYear()),
+    pgFunc: '',                 // pagamentos: por ID (FK)
     pgAno: String(hoje.getFullYear()),
     finMes: hoje.getMonth(),
     finAno: hoje.getFullYear(),
-    pagamentos: loadPag()
+    emps: [],                   // funcionários (API): {id, nome, funcao, setor, salario}
+    lancamentos: [],            // fluxo de caixa (API)
+    pagamentos: [],             // pagamentos (API)
+    jornadas: []                // jornadas (API)
   };
 
-  /* ---------- Fontes de dados ---------- */
-  function getEmployees() {
+  /* ---------- Fontes de dados (API) ---------- */
+  function getEmployees() { return state.emps; }
+  function empById(id) { return state.emps.find(function (e) { return String(e.id) === String(id); }) || null; }
+
+  async function carregarEmps() {
     try {
-      var raw = localStorage.getItem('jc_funcionarios');
-      if (raw) { var a = JSON.parse(raw); if (a && a.length) return a; }
-    } catch (e) {}
-    return [
-      { nome: 'Maria Souza', funcao: 'Engenheira eletricista', dep: 'Elétrica', salario: 8200 },
-      { nome: 'Carlos Lima', funcao: 'Técnico em energia solar', dep: 'Solar', salario: 3800 },
-      { nome: 'João Pedro', funcao: 'Eletricista', dep: 'Elétrica', salario: 3200 },
-      { nome: 'Ana Beatriz', funcao: 'Vendedora', dep: 'Comercial', salario: 2800 },
-      { nome: 'Rafael Gomes', funcao: 'Auxiliar técnico', dep: 'Solar', salario: 1900 },
-      { nome: 'Patrícia Nunes', funcao: 'Analista financeiro', dep: 'Administrativo', salario: 4500 }
-    ];
+      var lista = await JC.api.funcionarios.list();
+      state.emps = (lista || []).map(function (f) {
+        return { id: f.id, nome: f.nome, funcao: f.funcao, setor: f.setor, salario: f.salario == null ? 0 : Number(f.salario) };
+      });
+    } catch (e) { console.error('Falha ao carregar funcionários:', e); state.emps = []; }
   }
-  function getCashflow() {
-    try {
-      var raw = localStorage.getItem('jc_fluxo_caixa');
-      if (raw) { var a = JSON.parse(raw); if (a && a.length) return a; }
-    } catch (e) {}
-    return [
-      { data: '2026-06-10', descricao: 'Instalação solar — Cond. Vila Verde', categoria: 'Instalação solar', forma: 'Pix', tipo: 'entrada', status: 'pago', valor: 12500 },
-      { data: '2026-06-09', descricao: 'Compra de cabos e disjuntores', categoria: 'Fornecedores', forma: 'Boleto', tipo: 'saida', status: 'pago', valor: 4200 },
-      { data: '2026-06-08', descricao: 'Manutenção elétrica — Mercado São José', categoria: 'Serviços', forma: 'Transferência', tipo: 'entrada', status: 'pago', valor: 1850 },
-      { data: '2026-06-07', descricao: 'Folha de pagamento — equipe', categoria: 'Folha de pagamento', forma: 'Transferência', tipo: 'saida', status: 'pago', valor: 9800 },
-      { data: '2026-06-06', descricao: 'Projeto fotovoltaico — Padaria', categoria: 'Instalação solar', forma: 'Cartão', tipo: 'entrada', status: 'pago', valor: 7600 },
-      { data: '2026-06-05', descricao: 'Combustível da frota', categoria: 'Combustível', forma: 'Cartão', tipo: 'saida', status: 'pago', valor: 680 }
-    ];
+  async function carregarPagamentos() {
+    try { state.pagamentos = (await JC.api.pagamentos.list()) || []; }
+    catch (e) { console.error('Falha ao carregar pagamentos:', e); state.pagamentos = []; }
+  }
+  async function carregarLancamentos() {
+    try { state.lancamentos = (await JC.api.lancamentos.list()) || []; }
+    catch (e) { console.error('Falha ao carregar lançamentos:', e); state.lancamentos = []; }
+  }
+  async function carregarJornadas() {
+    try { state.jornadas = (await JC.api.jornadas.list()) || []; }
+    catch (e) { console.error('Falha ao carregar jornadas:', e); state.jornadas = []; }
   }
 
-  function loadPag() {
-    try { var raw = localStorage.getItem(KEY_PAG); if (raw) return JSON.parse(raw); } catch (e) {}
-    return seedPag();
+  /* ---------- Tempo / horas ---------- */
+  function minutesOf(t) {
+    if (!t) return null;
+    var p = String(t).split(':');
+    if (p.length < 2) return null;
+    return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
   }
-  function savePag() { try { localStorage.setItem(KEY_PAG, JSON.stringify(state.pagamentos)); } catch (e) {} }
-  function seedPag() {
-    var base = [
-      { func: 'Maria Souza', tipo: 'Salário', forma: 'Transferência', data: '2026-05-05', comp: '2026-05', valor: 8200, obs: 'Salário mensal' },
-      { func: 'Maria Souza', tipo: 'Salário', forma: 'Transferência', data: '2026-06-05', comp: '2026-06', valor: 8200, obs: 'Salário mensal' },
-      { func: 'Carlos Lima', tipo: 'Salário', forma: 'Transferência', data: '2026-06-05', comp: '2026-06', valor: 3800, obs: '' },
-      { func: 'Carlos Lima', tipo: 'Bônus', forma: 'Pix', data: '2026-06-10', comp: '2026-06', valor: 500, obs: 'Meta de instalações atingida' },
-      { func: 'João Pedro', tipo: 'Salário', forma: 'Transferência', data: '2026-06-05', comp: '2026-06', valor: 3200, obs: '' },
-      { func: 'Ana Beatriz', tipo: 'Comissão', forma: 'Pix', data: '2026-06-08', comp: '2026-06', valor: 1200, obs: 'Comissão de vendas — maio' }
-    ];
-    return base.map(function (p, i) { p.id = 'pg' + (Date.now() + i); return p; });
+  function minutosTrabalhados(entrada, saida) {
+    var a = minutesOf(entrada), b = minutesOf(saida);
+    if (a == null || b == null) return 0;
+    var d = b - a;
+    if (d < 0) d += 1440;
+    return d;
+  }
+  function horasStr(min) {
+    var h = Math.floor(min / 60), m = min % 60;
+    if (!h && !m) return '—';
+    return h + 'h' + (m ? ' ' + String(m).padStart(2, '0') + 'min' : '');
   }
 
   /* ---------- Selects ---------- */
@@ -82,43 +85,196 @@
       return '<option value="' + esc(String(o.v)) + '">' + esc(o.t) + '</option>';
     }).join('');
   }
-  function populate() {
-    var emps = getEmployees();
-    var empOpts = emps.map(function (e) { return { v: e.nome, t: e.nome }; });
-    fillSelect(document.getElementById('pg-func'), empOpts);
-    fillSelect(document.getElementById('pf-func'), empOpts);
-    if (emps.length) state.pgFunc = emps[0].nome;
-
+  function anosOptions(comTodos) {
     var anos = [];
     for (var y = hoje.getFullYear(); y >= hoje.getFullYear() - 3; y--) anos.push({ v: y, t: y });
-    anos.unshift({ v: 'all', t: 'Todos os anos' });
-    fillSelect(document.getElementById('pg-ano'), anos);
-    gvSet('pg-ano', state.pgAno);
+    if (comTodos) anos.unshift({ v: 'all', t: 'Todos os anos' });
+    return anos;
+  }
+  function populate() {
+    var emps = state.emps;
+    if (emps.length) {
+      state.wkFunc = String(emps[0].id);    // jornadas por id (FK)
+      state.pgFunc = String(emps[0].id);    // pagamentos por id (FK)
+    }
+    var empIdOptsWk = emps.map(function (e) { return { v: e.id, t: e.nome }; });
+    // Aba: registro de trabalho (por id — FK do back-end)
+    fillSelect(document.getElementById('wk-func'), empIdOptsWk);
+    fillSelect(document.getElementById('wk-ano'), anosOptions(true));
+    gvSet('wk-ano', state.wkAno);
+    if (emps.length) gvSet('wk-func', state.wkFunc);
 
+    // Aba: pagamentos (por id — FK do back-end)
+    var empIdOpts = emps.map(function (e) { return { v: e.id, t: e.nome }; });
+    fillSelect(document.getElementById('pg-func'), empIdOpts);
+    fillSelect(document.getElementById('pf-func'), empIdOpts);
+    fillSelect(document.getElementById('pg-ano'), anosOptions(true));
+    gvSet('pg-ano', state.pgAno);
+    if (emps.length) gvSet('pg-func', state.pgFunc);
+
+    // Aba: financeiro
     fillSelect(document.getElementById('fin-mes'), MESES.map(function (m, i) { return { v: i, t: m }; }));
-    var fAnos = [];
-    for (var y2 = hoje.getFullYear(); y2 >= hoje.getFullYear() - 3; y2--) fAnos.push({ v: y2, t: y2 });
-    fillSelect(document.getElementById('fin-ano'), fAnos);
+    fillSelect(document.getElementById('fin-ano'), anosOptions(false));
     gvSet('fin-mes', state.finMes);
     gvSet('fin-ano', state.finAno);
   }
 
   /* ============================================================
-     ABA 1 — Pagamentos por funcionário
+     ABA 1 — Registro de trabalho (⚠ LOCAL, sem back-end)
+     ============================================================ */
+  function renderTrabalho() {
+    var box = document.getElementById('wk-report');
+    if (!box) return;
+    var emp = empById(state.wkFunc) || state.emps[0];
+    if (!emp) {
+      box.innerHTML = '<div class="rep-doc"><div class="rep-empty"><div class="ico"><i class="bi bi-people"></i></div><p>Cadastre funcionários para gerar relatórios.</p></div></div>';
+      return;
+    }
+
+    var regs = state.jornadas.filter(function (r) {
+      if (String(r.funcionarioId) !== String(emp.id)) return false;
+      if (state.wkAno !== 'all' && String(r.data).slice(0, 4) !== state.wkAno) return false;
+      return true;
+    }).sort(function (a, b) { return a.data < b.data ? 1 : a.data > b.data ? -1 : 0; });
+
+    var totalMin = regs.reduce(function (s, r) { return s + minutosTrabalhados(r.entrada, r.saida); }, 0);
+    var totalDesp = regs.reduce(function (s, r) { return s + Number(r.despesa || 0); }, 0);
+    var periodoLabel = state.wkAno === 'all' ? 'todos os anos' : state.wkAno;
+
+    var linhas = regs.length
+      ? regs.map(function (r) {
+          var min = minutosTrabalhados(r.entrada, r.saida);
+          var despCell = Number(r.despesa) > 0
+            ? '<span class="exp">' + fmt(r.despesa) + '</span>' + (r.despesaDesc ? '<span class="exp-desc">' + esc(r.despesaDesc) + '</span>' : '')
+            : '<span class="exp-none">—</span>';
+          return '<tr>' +
+            '<td data-label="Data">' + fmtDateBR(r.data) + '</td>' +
+            '<td data-label="Entrada">' + esc(r.entrada || '—') + '</td>' +
+            '<td data-label="Saída">' + esc(r.saida || '—') + '</td>' +
+            '<td data-label="Horas"><span class="rep-tag">' + horasStr(min) + '</span></td>' +
+            '<td class="activity" data-label="O que foi feito">' + (r.atividade ? esc(r.atividade) : '—') + '</td>' +
+            '<td class="num" data-label="Despesa">' + despCell + '</td>' +
+            '<td class="col-act"><button class="rep-del" data-id="' + r.id + '" aria-label="Excluir"><i class="bi bi-trash3"></i></button></td>' +
+          '</tr>';
+        }).join('')
+      : '<tr><td colspan="7"><div class="rep-empty"><div class="ico"><i class="bi bi-clock-history"></i></div><p>Nenhum dia de trabalho registrado para ' + esc(periodoLabel) + '.</p></div></td></tr>';
+
+    box.innerHTML =
+      '<div class="rep-doc">' +
+        '<div class="rep-head">' +
+          '<div class="rep-brand"><img class="rep-logo" width="40" src="src/img/icone-laranja.png" alt=""><div><strong>JC · Elétrica &amp; Solar</strong><span>Registro de trabalho</span></div></div>' +
+          '<div class="rep-meta">Emitido em<b>' + fmtDateBR(new Date().toISOString().slice(0, 10)) + '</b>Referência: ' + esc(periodoLabel) + '</div>' +
+        '</div>' +
+        '<div class="rep-emp">' +
+          '<div class="av" style="background:' + colorFor(emp.nome) + '">' + esc(initials(emp.nome)) + '</div>' +
+          '<div><div class="nm">' + esc(emp.nome) + '</div><div class="role">' + esc(emp.funcao || '') + (emp.setor ? ' · ' + esc(emp.setor) : '') + '</div></div>' +
+          '<div class="right"><span class="cap">Total de horas</span><span class="vl">' + horasStr(totalMin) + '</span></div>' +
+        '</div>' +
+        '<div class="rep-summary">' +
+          '<div class="rep-sum"><span class="l">Dias registrados</span><span class="v">' + regs.length + '</span></div>' +
+          '<div class="rep-sum"><span class="l">Total de horas</span><span class="v" style="font-size:18px">' + horasStr(totalMin) + '</span></div>' +
+          '<div class="rep-sum"><span class="l">Total de despesas</span><span class="v out">' + fmt(totalDesp) + '</span></div>' +
+          '<div class="rep-sum"><span class="l">Referência</span><span class="v" style="font-size:15px">' + esc(periodoLabel) + '</span></div>' +
+        '</div>' +
+        '<table class="rep-table">' +
+          '<thead><tr><th>Data</th><th>Entrada</th><th>Saída</th><th>Horas</th><th>O que foi feito</th><th class="num">Despesa</th><th class="col-act"></th></tr></thead>' +
+          '<tbody>' + linhas + '</tbody>' +
+        '</table>' +
+        '<div class="rep-total"><span class="lbl">Total de horas no período</span><span class="amt">' + horasStr(totalMin) + '</span></div>' +
+        '<div class="rep-foot">JC · Elétrica &amp; Solar — registro de trabalho gerado pelo sistema de gestão</div>' +
+      '</div>';
+
+    box.querySelectorAll('.rep-del').forEach(function (b) {
+      b.addEventListener('click', function () { removeWk(b.dataset.id); });
+    });
+  }
+
+  function removeWk(id) {
+    JC.confirm({ message: 'Excluir este registro de trabalho?', confirmText: 'Excluir', danger: true }).then(async function (ok) {
+      if (!ok) return;
+      try {
+        await JC.api.jornadas.remove(id);
+        await carregarJornadas();
+        renderTrabalho();
+        JC.toast('Registro excluído.', 'success');
+      } catch (e) {
+        console.error(e);
+        JC.toast(e && e.message ? e.message : 'Erro ao excluir o registro.', 'error');
+      }
+    });
+  }
+
+  function openNewTrabalho() {
+    var emps = getEmployees();
+    JC.modal.open({
+      title: 'Registrar dia de trabalho',
+      subtitle: 'Jornada e atividades do funcionário',
+      submitText: 'Salvar registro',
+      fields: [
+        { id: 'func', label: 'Funcionário', type: 'select', required: true, value: state.wkFunc,
+          options: emps.map(function (e) { return { value: e.id, label: e.nome }; }) },
+        { id: 'data', label: 'Data', type: 'date', required: true, half: true, value: new Date().toISOString().slice(0, 10) },
+        { id: 'entrada', label: 'Entrada', type: 'time', required: true, half: true, value: '08:00' },
+        { id: 'saida', label: 'Saída', type: 'time', required: true, half: true, value: '17:00' },
+        { id: 'atividade', label: 'O que foi feito', type: 'textarea', rows: 3, required: true, placeholder: 'Descreva o serviço/atividade realizada no dia' },
+        { id: 'despesaValor', label: 'Despesa (R$)', type: 'number', step: '0.01', min: '0', half: true, inputmode: 'decimal', placeholder: '0,00 (opcional)' },
+        { id: 'despesaDesc', label: 'Descrição da despesa', type: 'text', half: true, placeholder: 'Ex.: combustível, material' }
+      ],
+      onReady: function (ctrl) {
+        var ent = ctrl.input('entrada'), sai = ctrl.input('saida'), dv = ctrl.input('despesaValor');
+        function calcHoras() {
+          var min = minutosTrabalhados(ent.value, sai.value);
+          ctrl.setHint('saida', min > 0 ? ('Jornada: ' + horasStr(min)) : 'A saída deve ser depois da entrada.');
+        }
+        function calcDesp() {
+          var v = parseFloat(String(dv.value).replace(',', '.'));
+          ctrl.setHint('despesaValor', (!isNaN(v) && v > 0) ? ('Despesa lançada: ' + fmt(v)) : 'Opcional — em branco se não houve.');
+        }
+        if (ent && sai) { ent.addEventListener('input', calcHoras); sai.addEventListener('input', calcHoras); calcHoras(); }
+        if (dv) { dv.addEventListener('input', calcDesp); calcDesp(); }
+      },
+      onSubmit: async function (vals) {
+        if (minutosTrabalhados(vals.entrada, vals.saida) <= 0) {
+          throw new Error('A saída deve ser depois da entrada.');
+        }
+        var funcionarioId = Number(vals.func);
+        if (!funcionarioId) throw new Error('Selecione um funcionário.');
+        var desp = parseFloat(String(vals.despesaValor).replace(',', '.'));
+        if (isNaN(desp) || desp < 0) desp = 0;
+        var body = {
+          funcionarioId: funcionarioId,
+          data: vals.data,
+          entrada: vals.entrada,
+          saida: vals.saida,
+          atividade: String(vals.atividade).trim(),
+          despesa: desp,
+          despesaDesc: String(vals.despesaDesc || '').trim() || null
+        };
+        await JC.api.jornadas.create(body);
+        state.wkFunc = String(funcionarioId);
+        gvSet('wk-func', state.wkFunc);
+        await carregarJornadas();
+        renderTrabalho();
+        JC.toast('Dia de trabalho registrado.', 'success');
+      }
+    });
+  }
+
+  /* ============================================================
+     ABA 2 — Pagamentos por funcionário (100% API)
      ============================================================ */
   function renderPagamentos() {
     var box = document.getElementById('pg-report');
     if (!box) return;
-    var emps = getEmployees();
-    var emp = emps.find(function (e) { return e.nome === state.pgFunc; }) || emps[0];
+    var emp = empById(state.pgFunc) || state.emps[0];
     if (!emp) {
       box.innerHTML = '<div class="rep-doc"><div class="rep-empty"><div class="ico"><i class="bi bi-people"></i></div><p>Cadastre funcionários para gerar relatórios.</p></div></div>';
       return;
     }
 
     var pays = state.pagamentos.filter(function (p) {
-      if (p.func !== emp.nome) return false;
-      if (state.pgAno !== 'all' && p.data.slice(0, 4) !== state.pgAno) return false;
+      if (String(p.funcionarioId) !== String(emp.id)) return false;
+      if (state.pgAno !== 'all' && String(p.data).slice(0, 4) !== state.pgAno) return false;
       return true;
     }).sort(function (a, b) { return a.data < b.data ? 1 : a.data > b.data ? -1 : 0; });
 
@@ -129,12 +285,12 @@
     var linhas = pays.length
       ? pays.map(function (p) {
           return '<tr>' +
-            '<td>' + fmtDateBR(p.data) + '</td>' +
-            '<td>' + fmtComp(p.comp) + '</td>' +
-            '<td><span class="rep-tag">' + esc(p.tipo) + '</span></td>' +
-            '<td>' + esc(p.forma) + '</td>' +
-            '<td>' + (p.obs ? esc(p.obs) : '—') + '</td>' +
-            '<td class="num">' + fmt(p.valor) + '</td>' +
+            '<td data-label="Data">' + fmtDateBR(p.data) + '</td>' +
+            '<td data-label="Competência">' + fmtComp(p.competencia) + '</td>' +
+            '<td data-label="Tipo"><span class="rep-tag">' + esc(p.tipo || '—') + '</span></td>' +
+            '<td data-label="Forma">' + esc(p.forma || '—') + '</td>' +
+            '<td data-label="Detalhes">' + (p.obs ? esc(p.obs) : '—') + '</td>' +
+            '<td class="num" data-label="Valor">' + fmt(p.valor) + '</td>' +
             '<td class="col-act"><button class="rep-del" data-id="' + p.id + '" aria-label="Excluir"><i class="bi bi-trash3"></i></button></td>' +
           '</tr>';
         }).join('')
@@ -143,12 +299,12 @@
     box.innerHTML =
       '<div class="rep-doc">' +
         '<div class="rep-head">' +
-          '<div class="rep-brand"><div class="rep-logo">JC</div><div><strong>JC · Elétrica &amp; Solar</strong><span>Relatório de pagamentos</span></div></div>' +
+          '<div class="rep-brand"><img class="rep-logo" width="40" src="src/img/icone-laranja.png" alt=""><div><strong>JC · Elétrica &amp; Solar</strong><span>Relatório de pagamentos</span></div></div>' +
           '<div class="rep-meta">Emitido em<b>' + fmtDateBR(new Date().toISOString().slice(0, 10)) + '</b>Referência: ' + esc(periodoLabel) + '</div>' +
         '</div>' +
         '<div class="rep-emp">' +
           '<div class="av" style="background:' + colorFor(emp.nome) + '">' + esc(initials(emp.nome)) + '</div>' +
-          '<div><div class="nm">' + esc(emp.nome) + '</div><div class="role">' + esc(emp.funcao || '') + (emp.dep ? ' · ' + esc(emp.dep) : '') + '</div></div>' +
+          '<div><div class="nm">' + esc(emp.nome) + '</div><div class="role">' + esc(emp.funcao || '') + (emp.setor ? ' · ' + esc(emp.setor) : '') + '</div></div>' +
           '<div class="right"><span class="cap">Salário base</span><span class="vl">' + fmt(emp.salario || 0) + '</span></div>' +
         '</div>' +
         '<div class="rep-summary">' +
@@ -171,33 +327,98 @@
   }
 
   function removePag(id) {
-    JC.confirm({ message: 'Excluir este pagamento do relatório?', confirmText: 'Excluir', danger: true }).then(function (ok) {
+    JC.confirm({ message: 'Excluir este pagamento do relatório?', confirmText: 'Excluir', danger: true }).then(async function (ok) {
       if (!ok) return;
-      state.pagamentos = state.pagamentos.filter(function (p) { return p.id !== id; });
-      savePag();
-      renderPagamentos();
-      JC.toast('Pagamento excluído.', 'success');
+      try {
+        await JC.api.pagamentos.remove(id);
+        await carregarPagamentos();
+        renderPagamentos();
+        JC.toast('Pagamento excluído.', 'success');
+      } catch (e) {
+        console.error(e);
+        JC.toast(e && e.message ? e.message : 'Erro ao excluir o pagamento.', 'error');
+      }
+    });
+  }
+
+  function openNewPagamento() {
+    var emps = getEmployees();
+    JC.modal.open({
+      title: 'Registrar pagamento',
+      subtitle: 'Lance um pagamento efetuado a um funcionário',
+      submitText: 'Salvar pagamento',
+      fields: [
+        { id: 'func', label: 'Funcionário', type: 'select', required: true, value: state.pgFunc,
+          options: emps.map(function (e) { return { value: e.id, label: e.nome }; }) },
+        { id: 'tipo', label: 'Tipo de pagamento', type: 'select', half: true,
+          options: ['Salário', 'Adiantamento', 'Bônus', 'Comissão', 'Vale', 'Férias', '13º salário'] },
+        { id: 'forma', label: 'Forma de pagamento', type: 'select', half: true,
+          options: ['Transferência', 'Pix', 'Dinheiro', 'Cartão'] },
+        { id: 'data', label: 'Data do pagamento', type: 'date', required: true, half: true, value: new Date().toISOString().slice(0, 10) },
+        { id: 'comp', label: 'Competência', type: 'month', half: true, value: new Date().toISOString().slice(0, 7) },
+        { id: 'valor', label: 'Valor (R$)', type: 'number', step: '0.01', min: '0', required: true, inputmode: 'decimal', placeholder: '0,00' },
+        { id: 'obs', label: 'Detalhes', type: 'textarea', rows: 2, placeholder: 'Ex: referente ao mês, horas extras, meta atingida...' }
+      ],
+      onReady: function (ctrl) {
+        var data = ctrl.input('data'), comp = ctrl.input('comp'), valor = ctrl.input('valor'), tipo = ctrl.input('tipo');
+        var compEditado = false;
+        if (comp) comp.addEventListener('input', function () { compEditado = true; });
+        function syncComp() { if (data && comp && !compEditado && data.value) comp.value = data.value.slice(0, 7); }
+        if (data) { data.addEventListener('change', syncComp); syncComp(); }
+        function preview() {
+          var v = parseFloat(String(valor.value).replace(',', '.'));
+          ctrl.setHint('valor', (!isNaN(v) && v > 0)
+            ? (fmt(v) + (tipo && tipo.value ? ' · ' + tipo.value : ''))
+            : 'Informe o valor pago.');
+        }
+        if (valor) { valor.addEventListener('input', preview); preview(); }
+        if (tipo) tipo.addEventListener('change', preview);
+      },
+      onSubmit: async function (vals) {
+        var valor = parseFloat(String(vals.valor).replace(',', '.'));
+        if (isNaN(valor) || valor <= 0) throw new Error('Informe um valor válido.');
+        var funcionarioId = Number(vals.func);
+        if (!funcionarioId) throw new Error('Selecione um funcionário.');
+        var data = vals.data;
+        var body = {
+          funcionarioId: funcionarioId,
+          tipo: vals.tipo || 'Salário',
+          forma: vals.forma || 'Transferência',
+          data: data,
+          competencia: vals.comp || String(data).slice(0, 7),
+          valor: valor,
+          obs: String(vals.obs || '').trim() || null
+        };
+        await JC.api.pagamentos.create(body);
+        state.pgFunc = String(funcionarioId);
+        gvSet('pg-func', state.pgFunc);
+        await carregarPagamentos();
+        renderPagamentos();
+        JC.toast('Pagamento registrado.', 'success');
+      }
     });
   }
 
   /* ============================================================
-     ABA 2 — Financeiro do mês
+     ABA 3 — Financeiro do mês (100% API: lançamentos + folha reais)
      ============================================================ */
   function renderFinanceiro() {
     var box = document.getElementById('fin-report');
     if (!box) return;
     var ym = state.finAno + '-' + String(state.finMes + 1).padStart(2, '0');
 
-    var movs = getCashflow().filter(function (m) { return m.data.slice(0, 7) === ym && m.status === 'pago'; });
+    var movs = state.lancamentos.filter(function (m) { return String(m.data).slice(0, 7) === ym && m.status === 'pago'; });
     var entradas = 0, saidas = 0;
     var catIn = {}, catOut = {};
     movs.forEach(function (m) {
-      if (m.tipo === 'entrada') { entradas += m.valor; catIn[m.categoria] = (catIn[m.categoria] || 0) + m.valor; }
-      else { saidas += m.valor; catOut[m.categoria] = (catOut[m.categoria] || 0) + m.valor; }
+      var v = Number(m.valor) || 0;
+      if (m.tipo === 'entrada') { entradas += v; catIn[m.categoria] = (catIn[m.categoria] || 0) + v; }
+      else { saidas += v; catOut[m.categoria] = (catOut[m.categoria] || 0) + v; }
     });
     var resultado = entradas - saidas;
 
-    var folha = state.pagamentos.filter(function (p) { return p.comp === ym; })
+    // Folha paga no mês = soma dos pagamentos com competência = ym (dado real da API)
+    var folha = state.pagamentos.filter(function (p) { return p.competencia === ym; })
       .reduce(function (s, p) { return s + Number(p.valor || 0); }, 0);
 
     function catPanel(title, obj, cls, sideTotal) {
@@ -215,7 +436,7 @@
           var pct = sideTotal ? Math.round((c.val / sideTotal) * 100) : 0;
           return '<div class="cat-row">' +
             '<div class="cat-meta">' +
-              '<span class="nm"><span class="cat-dot ' + cls + '"></span><span class="txt">' + esc(c.nome) + '</span></span>' +
+              '<span class="nm"><span class="cat-dot ' + cls + '"></span><span class="txt">' + esc(c.nome || 'Sem categoria') + '</span></span>' +
               '<span class="vl">' + fmt(c.val) + '<em>' + pct + '%</em></span>' +
             '</div>' +
             '<div class="cat-track"><div class="cat-bar ' + cls + '" style="width:' + pct + '%"></div></div>' +
@@ -230,9 +451,9 @@
       ? lista.map(function (m) {
           var sinal = m.tipo === 'entrada' ? '+ ' : '− ';
           var cls = m.tipo === 'entrada' ? 'in' : 'out';
-          return '<tr><td>' + fmtDateBR(m.data) + '</td><td>' + esc(m.descricao) + '</td>' +
-            '<td><span class="rep-tag">' + esc(m.categoria) + '</span></td><td>' + esc(m.forma) + '</td>' +
-            '<td class="num"><span style="color:var(--' + (cls === 'in' ? 'success' : 'danger') + ');font-weight:700">' + sinal + fmt(m.valor) + '</span></td></tr>';
+          return '<tr><td data-label="Data">' + fmtDateBR(m.data) + '</td><td data-label="Descrição">' + esc(m.descricao) + '</td>' +
+            '<td data-label="Categoria"><span class="rep-tag">' + esc(m.categoria || '—') + '</span></td><td data-label="Forma">' + esc(m.forma || '—') + '</td>' +
+            '<td class="num" data-label="Valor"><span style="color:var(--' + (cls === 'in' ? 'success' : 'danger') + ');font-weight:700">' + sinal + fmt(m.valor) + '</span></td></tr>';
         }).join('')
       : '<tr><td colspan="5"><div class="rep-empty"><div class="ico"><i class="bi bi-graph-up"></i></div><p>Sem movimentações pagas em ' + MESES[state.finMes] + ' de ' + state.finAno + '.</p></div></td></tr>';
 
@@ -241,7 +462,7 @@
     box.innerHTML =
       '<div class="rep-doc">' +
         '<div class="rep-head">' +
-          '<div class="rep-brand"><div class="rep-logo">JC</div><div><strong>JC · Elétrica &amp; Solar</strong><span>Relatório financeiro</span></div></div>' +
+          '<div class="rep-brand"><div><strong>JC · Elétrica &amp; Solar</strong><span>Relatório financeiro</span></div></div>' +
           '<div class="rep-meta">Período<b>' + MESES[state.finMes] + ' / ' + state.finAno + '</b>Emitido em ' + fmtDateBR(new Date().toISOString().slice(0, 10)) + '</div>' +
         '</div>' +
         '<div class="rep-summary">' +
@@ -264,82 +485,61 @@
       '</div>';
   }
 
-  /* ---------- Modal de pagamento ---------- */
-  function openNew() {
-    gvSet('pf-id', '');
-    gvSet('pf-func', state.pgFunc);
-    gvSet('pf-tipo', 'Salário');
-    gvSet('pf-forma', 'Transferência');
-    gvSet('pf-data', new Date().toISOString().slice(0, 10));
-    gvSet('pf-comp', new Date().toISOString().slice(0, 7));
-    gvSet('pf-valor', '');
-    gvSet('pf-obs', '');
-    set('pf-error', '');
-    if (window.openModal) window.openModal();
-  }
-  function submitPag(e) {
-    if (e) e.preventDefault();
-    var func = gv('pf-func');
-    var valor = parseFloat(gv('pf-valor'));
-    var data = gv('pf-data');
-    if (!func) { set('pf-error', 'Selecione o funcionário.'); return; }
-    if (isNaN(valor) || valor <= 0) { set('pf-error', 'Informe um valor válido.'); return; }
-    if (!data) { set('pf-error', 'Informe a data do pagamento.'); return; }
-    set('pf-error', '');
-
-    state.pagamentos.push({
-      id: 'pg' + Date.now(),
-      func: func,
-      tipo: gv('pf-tipo') || 'Salário',
-      forma: gv('pf-forma') || 'Transferência',
-      data: data,
-      comp: gv('pf-comp') || data.slice(0, 7),
-      valor: valor,
-      obs: gv('pf-obs')
-    });
-    savePag();
-    state.pgFunc = func;
-    gvSet('pg-func', func);
-    renderPagamentos();
-    JC.toast('Pagamento registrado.', 'success');
-    if (window.closeModal) window.closeModal();
-  }
-
   /* ---------- Abas ---------- */
   function setTab(tab) {
     state.tab = tab;
+    document.getElementById('tab-trabalho').hidden = (tab !== 'trabalho');
     document.getElementById('tab-pagamentos').hidden = (tab !== 'pagamentos');
     document.getElementById('tab-financeiro').hidden = (tab !== 'financeiro');
     document.querySelectorAll('#rel-tabs button').forEach(function (b) {
       b.classList.toggle('active', b.dataset.tab === tab);
     });
-    if (tab === 'pagamentos') renderPagamentos(); else renderFinanceiro();
+    if (tab === 'trabalho') renderTrabalho();
+    else if (tab === 'pagamentos') renderPagamentos();
+    else renderFinanceiro();
   }
 
   /* ---------- Exportar CSV (conforme aba) ---------- */
   function exportCSV() {
     var lines, fname;
-    if (state.tab === 'pagamentos') {
+    if (state.tab === 'trabalho') {
+      var empWk = empById(state.wkFunc);
+      var regs = state.jornadas.filter(function (r) {
+        return String(r.funcionarioId) === String(state.wkFunc) && (state.wkAno === 'all' || String(r.data).slice(0, 4) === state.wkAno);
+      }).sort(function (a, b) { return a.data < b.data ? 1 : -1; });
+      lines = ['Funcionário;Data;Entrada;Saída;Horas;O que foi feito;Despesa;Descrição despesa'];
+      regs.forEach(function (r) {
+        lines.push([
+          JC.csvCell(r.funcionario_nome || (empWk && empWk.nome) || ''), fmtDateBR(r.data), r.entrada, r.saida,
+          horasStr(minutosTrabalhados(r.entrada, r.saida)),
+          JC.csvCell(r.atividade || ''),
+          Number(r.despesa || 0).toFixed(2).replace('.', ','),
+          JC.csvCell(r.despesaDesc || '')
+        ].join(';'));
+      });
+      fname = 'registro-trabalho-' + String(empWk ? empWk.nome : 'funcionario').toLowerCase().replace(/\s+/g, '-') + '-' + state.wkAno + '.csv';
+    } else if (state.tab === 'pagamentos') {
+      var emp = empById(state.pgFunc);
       var pays = state.pagamentos.filter(function (p) {
-        return p.func === state.pgFunc && (state.pgAno === 'all' || p.data.slice(0, 4) === state.pgAno);
+        return String(p.funcionarioId) === String(state.pgFunc) && (state.pgAno === 'all' || String(p.data).slice(0, 4) === state.pgAno);
       }).sort(function (a, b) { return a.data < b.data ? 1 : -1; });
       lines = ['Funcionário;Data;Competência;Tipo;Forma;Valor;Detalhes'];
       pays.forEach(function (p) {
         lines.push([
-          '"' + p.func + '"', fmtDateBR(p.data), fmtComp(p.comp), p.tipo, p.forma,
-          Number(p.valor).toFixed(2).replace('.', ','), '"' + (p.obs || '').replace(/"/g, '""') + '"'
+          JC.csvCell(p.funcionario_nome || (emp && emp.nome) || ''), fmtDateBR(p.data), fmtComp(p.competencia), p.tipo || '', p.forma || '',
+          Number(p.valor || 0).toFixed(2).replace('.', ','), JC.csvCell(p.obs || '')
         ].join(';'));
       });
-      fname = 'pagamentos-' + state.pgFunc.toLowerCase().replace(/\s+/g, '-') + '-' + state.pgAno + '.csv';
+      fname = 'pagamentos-' + String(emp ? emp.nome : 'funcionario').toLowerCase().replace(/\s+/g, '-') + '-' + state.pgAno + '.csv';
     } else {
       var ym = state.finAno + '-' + String(state.finMes + 1).padStart(2, '0');
-      var movs = getCashflow().filter(function (m) { return m.data.slice(0, 7) === ym && m.status === 'pago'; })
+      var movs = state.lancamentos.filter(function (m) { return String(m.data).slice(0, 7) === ym && m.status === 'pago'; })
         .sort(function (a, b) { return a.data < b.data ? 1 : -1; });
       lines = ['Data;Descrição;Categoria;Forma;Tipo;Valor'];
       movs.forEach(function (m) {
         lines.push([
-          fmtDateBR(m.data), '"' + m.descricao.replace(/"/g, '""') + '"', m.categoria, m.forma, m.tipo,
-          Number(m.valor).toFixed(2).replace('.', ',')
+          fmtDateBR(m.data), JC.csvCell(m.descricao), m.categoria || '', m.forma || '', m.tipo,
+          Number(m.valor || 0).toFixed(2).replace('.', ',')
         ].join(';'));
       });
       fname = 'financeiro-' + ym + '.csv';
@@ -352,17 +552,21 @@
     var btn = e.target.closest('button[data-tab]');
     if (btn) setTab(btn.dataset.tab);
   });
+  document.getElementById('wk-func')?.addEventListener('change', function (e) { state.wkFunc = e.target.value; renderTrabalho(); });
+  document.getElementById('wk-ano')?.addEventListener('change', function (e) { state.wkAno = e.target.value; renderTrabalho(); });
+  document.getElementById('wk-add')?.addEventListener('click', openNewTrabalho);
   document.getElementById('pg-func')?.addEventListener('change', function (e) { state.pgFunc = e.target.value; renderPagamentos(); });
   document.getElementById('pg-ano')?.addEventListener('change', function (e) { state.pgAno = e.target.value; renderPagamentos(); });
   document.getElementById('fin-mes')?.addEventListener('change', function (e) { state.finMes = Number(e.target.value); renderFinanceiro(); });
   document.getElementById('fin-ano')?.addEventListener('change', function (e) { state.finAno = Number(e.target.value); renderFinanceiro(); });
-  document.getElementById('pg-add')?.addEventListener('click', openNew);
-  document.getElementById('pg-form')?.addEventListener('submit', submitPag);
+  document.getElementById('pg-add')?.addEventListener('click', openNewPagamento);
   document.getElementById('rel-export')?.addEventListener('click', exportCSV);
   document.getElementById('rel-print')?.addEventListener('click', function () { window.print(); });
 
   /* ---------- Init ---------- */
-  populate();
-  renderPagamentos();
-  renderFinanceiro();
+  (async function init() {
+    await Promise.all([carregarEmps(), carregarPagamentos(), carregarLancamentos(), carregarJornadas()]);
+    populate();
+    setTab(state.tab);
+  })();
 })();

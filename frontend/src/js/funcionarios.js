@@ -1,58 +1,67 @@
 /* ============================================================
    funcionarios.js — Gestão de Funcionários (RH)
-   Estado em localStorage, visões cards/lista, filtros,
-   resumo, cadastro/edição/exclusão e exportação CSV.
+   100% conectado ao back-end (JC.api.funcionarios). Visões
+   cards/lista, filtros, resumo, cadastro/edição/exclusão
+   (modal dinâmico JC.modal) e exportação CSV.
+
+   Contrato do back-end (GET /api/funcionarios):
+     { id:int, nome, funcao, setor, contrato, admissao('AAAA-MM-DD'|null),
+       salario:number|null, status, email, telefone, createdAt }
+   Enums: setor = Elétrica|Solar|Administrativo|Comercial ·
+          contrato = CLT|PJ|Temporário · status = ativo|ferias|afastado|inativo
    ============================================================ */
 'use strict';
 
 (function () {
   if (!document.getElementById('hr-grid')) return; // só na página de funcionários
 
-  var KEY = 'jc_funcionarios';
-
   var JC = window.JC;
-  // Helpers compartilhados (ver utils.js)
   var esc = JC.esc, fmt = JC.brl, fmtDateBR = JC.fmtDate;
   var initials = JC.initials, colorFor = JC.color;
-  var gv = JC.val, gvSet = JC.setVal, set = JC.setText;
+  var set = JC.setText;
 
   var state = {
-    funcs: load(),
+    funcs: [],
     view: 'grid',     // 'grid' | 'list'
     busca: '',
-    dep: 'todos',
-    status: 'todos'
+    dep: 'todos',     // filtra por setor
+    status: 'todos',
+    carregando: true
   };
 
   var STATUS_LABEL = { ativo: 'Ativo', ferias: 'Férias', afastado: 'Afastado', inativo: 'Inativo' };
+  var FUNCOES = ['Eletricista', 'Técnico em energia solar', 'Engenheiro eletricista', 'Auxiliar técnico', 'Gerente de obras', 'Vendedor', 'Administrativo', 'Financeiro'];
 
-  /* ---------- Persistência ---------- */
-  function load() {
-    try { var raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch (e) {}
-    return seed();
-  }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state.funcs)); } catch (e) {} }
-  function seed() {
-    var base = [
-      { nome: 'Maria Souza',     funcao: 'Engenheira eletricista',   dep: 'Elétrica',       contrato: 'CLT',        admissao: '2023-02-10', salario: 8200, status: 'ativo',    email: 'maria.souza@jcsolar.com',  telefone: '(84) 99999-0001' },
-      { nome: 'Carlos Lima',     funcao: 'Técnico em energia solar', dep: 'Solar',          contrato: 'CLT',        admissao: '2024-06-01', salario: 3800, status: 'ativo',    email: 'carlos.lima@jcsolar.com',  telefone: '(84) 99999-0002' },
-      { nome: 'João Pedro',      funcao: 'Eletricista',              dep: 'Elétrica',       contrato: 'CLT',        admissao: '2022-09-15', salario: 3200, status: 'ferias',   email: 'joao.pedro@jcsolar.com',   telefone: '(84) 99999-0003' },
-      { nome: 'Ana Beatriz',     funcao: 'Vendedora',                dep: 'Comercial',      contrato: 'PJ',         admissao: '2025-01-20', salario: 2800, status: 'ativo',    email: 'ana.beatriz@jcsolar.com',  telefone: '(84) 99999-0004' },
-      { nome: 'Rafael Gomes',    funcao: 'Auxiliar técnico',         dep: 'Solar',          contrato: 'Temporário', admissao: '2026-03-05', salario: 1900, status: 'ativo',    email: 'rafael.gomes@jcsolar.com', telefone: '(84) 99999-0005' },
-      { nome: 'Patrícia Nunes',  funcao: 'Analista financeiro',      dep: 'Administrativo', contrato: 'CLT',        admissao: '2021-11-02', salario: 4500, status: 'afastado', email: 'patricia.nunes@jcsolar.com', telefone: '(84) 99999-0006' }
-    ];
-    return base.map(function (f, i) { f.id = 'f' + (Date.now() + i); return f; });
+  function recurso() { return JC.api.funcionarios; }
+
+  /* ---------- Carregamento (API) ---------- */
+  async function carregar() {
+    state.carregando = true;
+    render();
+    try {
+      var lista = await recurso().list(); // todos; filtros são no cliente
+      state.funcs = (lista || []).map(function (f) {
+        f.salario = f.salario == null ? 0 : Number(f.salario);
+        return f;
+      });
+    } catch (e) {
+      console.error('Falha ao carregar funcionários:', e);
+      JC.toast('Não foi possível carregar os funcionários.', 'error');
+      state.funcs = [];
+    }
+    state.carregando = false;
+    render();
   }
 
   /* ---------- Filtro ---------- */
   function getFiltered() {
     var q = state.busca.toLowerCase();
     return state.funcs.filter(function (f) {
-      if (state.dep !== 'todos' && f.dep !== state.dep) return false;
+      if (state.dep !== 'todos' && f.setor !== state.dep) return false;
       if (state.status !== 'todos' && f.status !== state.status) return false;
-      if (q && (f.nome + ' ' + f.funcao + ' ' + (f.email || '')).toLowerCase().indexOf(q) === -1) return false;
+      if (q && ((f.nome || '') + ' ' + (f.funcao || '') + ' ' + (f.email || '')).toLowerCase().indexOf(q) === -1) return false;
       return true;
-    }).sort(function (a, b) { return a.nome.localeCompare(b.nome, 'pt-BR'); });
+    }).sort(function (a, b) { return (a.nome || '').localeCompare(b.nome || '', 'pt-BR'); });
   }
 
   /* ---------- Resumo ---------- */
@@ -69,13 +78,28 @@
     set('hr-folha', fmt(folha));
   }
 
+  /* ---------- Avatar (foto do banco ou iniciais coloridas) ---------- */
+  function avatarHTML(f, cls) {
+    if (f.foto) {
+      return '<div class="' + cls + ' has-photo" style="background-image:url(\'' + f.foto + '\');background-size:cover;background-position:center"></div>';
+    }
+    return '<div class="' + cls + '" style="background:' + colorFor(f.nome) + '">' + esc(initials(f.nome)) + '</div>';
+  }
+
   /* ---------- Render principal ---------- */
   function render() {
-    renderSummary();
-    var rows = getFiltered();
     var grid = document.getElementById('hr-grid');
     var listWrap = document.getElementById('hr-list');
 
+    if (state.carregando) {
+      renderSummary();
+      if (state.view === 'grid') { grid.hidden = false; listWrap.hidden = true; grid.innerHTML = '<div class="hr-empty" style="border:none"><p>Carregando…</p></div>'; }
+      else { grid.hidden = true; listWrap.hidden = false; var tb = document.getElementById('hr-tbody'); if (tb) tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px">Carregando…</td></tr>'; }
+      return;
+    }
+
+    renderSummary();
+    var rows = getFiltered();
     if (state.view === 'grid') {
       grid.hidden = false; listWrap.hidden = true;
       renderGrid(rows);
@@ -100,16 +124,16 @@
       return '' +
       '<div class="hr-card">' +
         '<div class="hr-card-top">' +
-          '<div class="hr-avatar" style="background:' + colorFor(f.nome) + '">' + esc(initials(f.nome)) + '</div>' +
+          avatarHTML(f, 'hr-avatar') +
           '<div class="hr-id">' +
             '<div class="hr-name">' + esc(f.nome) + '</div>' +
-            '<div class="hr-role">' + esc(f.funcao) + '</div>' +
+            '<div class="hr-role">' + esc(f.funcao || '—') + '</div>' +
           '</div>' +
         '</div>' +
         '<div class="hr-badges">' +
-          '<span class="hr-tag">' + esc(f.dep) + '</span>' +
-          '<span class="hr-tag">' + esc(f.contrato) + '</span>' +
-          '<span class="st ' + f.status + '">' + STATUS_LABEL[f.status] + '</span>' +
+          '<span class="hr-tag">' + esc(f.setor || '—') + '</span>' +
+          '<span class="hr-tag">' + esc(f.contrato || '—') + '</span>' +
+          '<span class="st ' + f.status + '">' + (STATUS_LABEL[f.status] || f.status) + '</span>' +
         '</div>' +
         '<div class="hr-meta">' +
           '<div class="hr-meta-item"><i class="bi bi-envelope"></i><span>' + esc(f.email || '—') + '</span></div>' +
@@ -125,7 +149,6 @@
         '</div>' +
       '</div>';
     }).join('');
-    bindRowActions(grid);
   }
 
   function renderList(rows) {
@@ -134,134 +157,149 @@
     tbody.innerHTML = rows.map(function (f) {
       return '' +
       '<tr>' +
-        '<td><div class="hr-cell-name">' +
-          '<div class="hr-avatar" style="background:' + colorFor(f.nome) + '">' + esc(initials(f.nome)) + '</div>' +
+        '<td data-label="Funcionário"><div class="hr-cell-name">' +
+          avatarHTML(f, 'hr-avatar') +
           '<div><div class="n">' + esc(f.nome) + '</div><div class="e">' + esc(f.email || '') + '</div></div>' +
         '</div></td>' +
-        '<td>' + esc(f.funcao) + '</td>' +
-        '<td><span class="hr-tag">' + esc(f.dep) + '</span></td>' +
-        '<td>' + esc(f.contrato) + '</td>' +
-        '<td>' + fmtDateBR(f.admissao) + '</td>' +
-        '<td class="num">' + fmt(Number(f.salario || 0)) + '</td>' +
-        '<td><span class="st ' + f.status + '">' + STATUS_LABEL[f.status] + '</span></td>' +
-        '<td><div class="hr-card-actions">' +
+        '<td data-label="Função">' + esc(f.funcao || '—') + '</td>' +
+        '<td data-label="Setor"><span class="hr-tag">' + esc(f.setor || '—') + '</span></td>' +
+        '<td data-label="Contrato">' + esc(f.contrato || '—') + '</td>' +
+        '<td data-label="Admissão">' + fmtDateBR(f.admissao) + '</td>' +
+        '<td class="num" data-label="Salário">' + fmt(Number(f.salario || 0)) + '</td>' +
+        '<td data-label="Status"><span class="st ' + f.status + '">' + (STATUS_LABEL[f.status] || f.status) + '</span></td>' +
+        '<td class="col-act"><div class="hr-card-actions">' +
           '<button class="icon-btn hr-edit" data-id="' + f.id + '" aria-label="Editar"><i class="bi bi-pencil"></i></button>' +
           '<button class="icon-btn danger hr-del" data-id="' + f.id + '" aria-label="Excluir"><i class="bi bi-trash3"></i></button>' +
         '</div></td>' +
       '</tr>';
     }).join('');
-    bindRowActions(tbody);
   }
 
-  function bindRowActions(scope) {
-    scope.querySelectorAll('.hr-edit').forEach(function (b) {
-      b.addEventListener('click', function () { openEdit(b.dataset.id); });
-    });
-    scope.querySelectorAll('.hr-del').forEach(function (b) {
-      b.addEventListener('click', function () { removeFunc(b.dataset.id); });
-    });
+  // Delegação: um listener por contêiner (não re-liga a cada render)
+  function onContainerClick(e) {
+    var ed = e.target.closest('.hr-edit');
+    if (ed) { var f = state.funcs.find(function (x) { return String(x.id) === ed.dataset.id; }); if (f) openForm(f); return; }
+    var dl = e.target.closest('.hr-del');
+    if (dl) { removeFunc(dl.dataset.id); }
   }
 
-  /* ---------- CRUD ---------- */
+  /* ---------- Excluir (API) ---------- */
   function removeFunc(id) {
-    var f = state.funcs.find(function (x) { return x.id === id; });
+    var f = state.funcs.find(function (x) { return String(x.id) === String(id); });
     if (!f) return;
-    JC.confirm({ message: 'Excluir ' + f.nome + '?', confirmText: 'Excluir', danger: true }).then(function (ok) {
+    JC.confirm({ message: 'Excluir ' + f.nome + '?', confirmText: 'Excluir', danger: true }).then(async function (ok) {
       if (!ok) return;
-      state.funcs = state.funcs.filter(function (x) { return x.id !== id; });
-      save(); render();
-      JC.toast('Funcionário excluído.', 'success');
+      try {
+        await recurso().remove(id);
+        JC.toast('Funcionário excluído.', 'success');
+        await carregar();
+      } catch (e) {
+        console.error(e);
+        JC.toast(e && e.message ? e.message : 'Erro ao excluir.', 'error');
+      }
     });
   }
 
-  function openNew() {
-    setTitle('Novo funcionário');
-    gvSet('hf-id', '');
-    ['hf-nome', 'hf-funcao', 'hf-salario', 'hf-email', 'hf-telefone'].forEach(function (id) { gvSet(id, ''); });
-    gvSet('hf-dep', 'Elétrica');
-    gvSet('hf-contrato', 'CLT');
-    gvSet('hf-status', 'ativo');
-    gvSet('hf-admissao', new Date().toISOString().slice(0, 10));
-    clearErr();
-    if (window.openModal) window.openModal();
-  }
+  /* ---------- Cadastro / edição (modal dinâmico) ---------- */
+  function openForm(f) {
+    f = f || {};
+    var editId = f.id || '';
+    var hoje = new Date().toISOString().slice(0, 10);
 
-  function openEdit(id) {
-    var f = state.funcs.find(function (x) { return x.id === id; });
-    if (!f) return;
-    setTitle('Editar funcionário');
-    gvSet('hf-id', f.id);
-    gvSet('hf-nome', f.nome);
-    gvSet('hf-funcao', f.funcao);
-    gvSet('hf-dep', f.dep);
-    gvSet('hf-contrato', f.contrato);
-    gvSet('hf-status', f.status);
-    gvSet('hf-salario', f.salario);
-    gvSet('hf-admissao', f.admissao);
-    gvSet('hf-email', f.email || '');
-    gvSet('hf-telefone', f.telefone || '');
-    clearErr();
-    if (window.openModal) window.openModal();
-  }
+    JC.modal.open({
+      title: editId ? 'Editar funcionário' : 'Novo funcionário',
+      subtitle: 'Dados profissionais do colaborador',
+      submitText: editId ? 'Salvar alterações' : 'Cadastrar funcionário',
+      maxWidth: '560px',
+      fields: [
+        { type: 'section', label: 'Dados pessoais' },
+        { id: 'foto', type: 'avatar', label: 'Foto do funcionário', value: f.foto || '' },
+        { id: 'nome', label: 'Nome completo', type: 'text', required: true, value: f.nome || '', placeholder: 'Ex: Maria Souza' },
+        { id: 'cpf', label: 'CPF', type: 'text', half: true, value: f.cpf || '', placeholder: '000.000.000-00', inputmode: 'numeric' },
+        { id: 'nascimento', label: 'Nascimento', type: 'date', half: true, value: f.nascimento || '' },
+        { id: 'telefone', label: 'Telefone', type: 'tel', half: true, value: f.telefone || '', placeholder: '(00) 00000-0000', inputmode: 'tel' },
+        { id: 'email', label: 'E-mail', type: 'email', half: true, value: f.email || '', placeholder: 'nome@empresa.com' },
+        { id: 'endereco', label: 'Endereço', type: 'text', value: f.endereco || '', placeholder: 'Rua, nº, bairro — cidade' },
 
-  function submitForm(e) {
-    if (e) e.preventDefault();
-    var nome = gv('hf-nome');
-    var salario = parseFloat(gv('hf-salario'));
-    if (!nome) { setErr('Informe o nome do funcionário.'); return; }
-    if (gv('hf-salario') !== '' && (isNaN(salario) || salario < 0)) { setErr('Salário inválido.'); return; }
-    clearErr();
+        { type: 'section', label: 'Dados profissionais' },
+        { id: 'funcao', label: 'Função / Cargo', type: 'text', value: f.funcao || '', placeholder: 'Ex: Eletricista', list: FUNCOES },
+        { id: 'setor', label: 'Setor', type: 'select', half: true, value: f.setor || 'Elétrica', options: ['Elétrica', 'Solar', 'Administrativo', 'Comercial'] },
+        { id: 'contrato', label: 'Contrato', type: 'select', half: true, value: f.contrato || 'CLT', options: ['CLT', 'PJ', 'Temporário'] },
+        { id: 'status', label: 'Status', type: 'select', half: true, value: f.status || 'ativo',
+          options: [{ value: 'ativo', label: 'Ativo' }, { value: 'ferias', label: 'Férias' }, { value: 'afastado', label: 'Afastado' }, { value: 'inativo', label: 'Inativo' }] },
+        { id: 'admissao', label: 'Admissão', type: 'date', half: true, value: f.admissao || hoje },
+        { id: 'salario', label: 'Salário (R$)', type: 'number', step: '0.01', min: '0', inputmode: 'decimal', value: f.salario != null && f.salario !== 0 ? f.salario : '', placeholder: '0,00' }
+      ],
+      onReady: function (ctrl) {
+        var cpf = ctrl.input('cpf'), tel = ctrl.input('telefone');
+        function dig(v) { return String(v || '').replace(/\D/g, ''); }
+        if (cpf) cpf.addEventListener('input', function () {
+          var d = dig(cpf.value).slice(0, 11), out = d;
+          if (d.length > 9) out = d.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+          else if (d.length > 6) out = d.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+          else if (d.length > 3) out = d.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+          cpf.value = out;
+        });
+        if (tel) tel.addEventListener('input', function () {
+          var d = dig(tel.value).slice(0, 11), out = d;
+          if (d.length > 10) out = d.replace(/(\d{2})(\d{5})(\d{1,4})/, '($1) $2-$3');
+          else if (d.length > 6) out = d.replace(/(\d{2})(\d{4,5})(\d{0,4})/, '($1) $2-$3');
+          else if (d.length > 2) out = d.replace(/(\d{2})(\d{1,5})/, '($1) $2');
+          else if (d.length > 0) out = d.replace(/(\d{1,2})/, '($1');
+          tel.value = out;
+        });
+      },
+      onSubmit: async function (vals) {
+        var nome = String(vals.nome || '').trim();
+        if (!nome) throw new Error('Informe o nome do funcionário.');
+        var salStr = String(vals.salario == null ? '' : vals.salario).trim().replace(',', '.');
+        var salario = parseFloat(salStr);
+        if (salStr !== '' && (isNaN(salario) || salario < 0)) throw new Error('Salário inválido.');
 
-    var dados = {
-      nome: nome,
-      funcao: gv('hf-funcao') || 'Não informado',
-      dep: gv('hf-dep'),
-      contrato: gv('hf-contrato'),
-      status: gv('hf-status'),
-      salario: isNaN(salario) ? 0 : salario,
-      admissao: gv('hf-admissao'),
-      email: gv('hf-email'),
-      telefone: gv('hf-telefone')
-    };
+        var body = {
+          nome: nome,
+          funcao: String(vals.funcao || '').trim() || null,
+          setor: vals.setor,
+          contrato: vals.contrato,
+          status: vals.status,
+          admissao: vals.admissao || null,
+          email: String(vals.email || '').trim(),
+          telefone: String(vals.telefone || '').trim() || null,
+          foto: vals.foto || null,
+          cpf: String(vals.cpf || '').trim() || null,
+          nascimento: vals.nascimento || null,
+          endereco: String(vals.endereco || '').trim() || null
+        };
+        if (salStr !== '') body.salario = salario;
 
-    var id = gv('hf-id');
-    if (id) {
-      var f = state.funcs.find(function (x) { return x.id === id; });
-      if (f) Object.assign(f, dados);
-    } else {
-      dados.id = 'f' + Date.now();
-      state.funcs.push(dados);
-    }
-    save(); render();
-    JC.toast(id ? 'Funcionário atualizado.' : 'Funcionário cadastrado.', 'success');
-    if (window.closeModal) window.closeModal();
+        if (editId) await recurso().update(editId, body);
+        else await recurso().create(body);
+        JC.toast(editId ? 'Funcionário atualizado.' : 'Funcionário cadastrado.', 'success');
+        await carregar();
+      }
+    });
   }
 
   /* ---------- Exportar CSV ---------- */
   function exportCSV() {
     var rows = getFiltered();
-    var head = ['Nome', 'Função', 'Setor', 'Contrato', 'Admissão', 'Salário', 'Status', 'Email', 'Telefone'];
+    var head = ['Nome', 'Função', 'Setor', 'Contrato', 'Admissão', 'Salário', 'Status', 'Email', 'Telefone', 'CPF', 'Nascimento', 'Endereço'];
     var lines = [head.join(';')];
     rows.forEach(function (f) {
       lines.push([
-        '"' + f.nome.replace(/"/g, '""') + '"',
-        '"' + f.funcao.replace(/"/g, '""') + '"',
-        f.dep, f.contrato, fmtDateBR(f.admissao),
+        JC.csvCell(f.nome), JC.csvCell(f.funcao || ''),
+        f.setor || '', f.contrato || '', fmtDateBR(f.admissao),
         Number(f.salario || 0).toFixed(2).replace('.', ','),
-        STATUS_LABEL[f.status], f.email || '', f.telefone || ''
+        STATUS_LABEL[f.status] || f.status, f.email || '', f.telefone || '',
+        f.cpf || '', f.nascimento ? fmtDateBR(f.nascimento) : '', JC.csvCell(f.endereco || '')
       ].join(';'));
     });
     JC.saveCSV('funcionarios-' + new Date().toISOString().slice(0, 10) + '.csv', lines);
   }
 
-  /* ---------- Form helpers ---------- */
-  function setTitle(t) { var el = document.getElementById('hr-modal-title'); if (el) el.textContent = t; }
-  function setErr(m) { var el = document.getElementById('hr-form-error'); if (el) el.textContent = m; }
-  function clearErr() { setErr(''); }
-
   /* ---------- Eventos ---------- */
   var busca = document.getElementById('hr-busca');
-  if (busca) busca.addEventListener('input', function () { state.busca = busca.value; render(); });
+  if (busca) busca.addEventListener('input', JC.debounce(function () { state.busca = busca.value; render(); }, 200));
 
   var dep = document.getElementById('hr-dep');
   if (dep) dep.addEventListener('change', function () { state.dep = dep.value; render(); });
@@ -282,14 +320,16 @@
   }
 
   var addBtn = document.getElementById('hr-add');
-  if (addBtn) addBtn.addEventListener('click', openNew);
+  if (addBtn) addBtn.addEventListener('click', function () { openForm(); });
 
   var exp = document.getElementById('hr-export');
   if (exp) exp.addEventListener('click', exportCSV);
 
-  var form = document.getElementById('hr-form');
-  if (form) form.addEventListener('submit', submitForm);
+  // Delegação de cliques nas ações de linha/card
+  document.getElementById('hr-grid').addEventListener('click', onContainerClick);
+  var tbody = document.getElementById('hr-tbody');
+  if (tbody) tbody.addEventListener('click', onContainerClick);
 
   /* ---------- Init ---------- */
-  render();
+  carregar();
 })();

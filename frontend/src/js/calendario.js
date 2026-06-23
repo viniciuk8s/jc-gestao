@@ -1,40 +1,31 @@
 /* ============================================================
-   calendario.js — AgendaPro
+   calendario.js — Agenda
    Calendário, tabela de serviços e modal de agendamento.
+   Dados via API (JC.api.agendamentos).
    ============================================================ */
 'use strict';
 
 (function () {
-  // Só inicializa se a página tiver o calendário.
   if (!document.getElementById('days-grid')) return;
 
   var JC = window.JC;
-  var escHtml = JC.esc; // helper compartilhado (ver utils.js)
+  var escHtml = JC.esc;
 
   /* ---------- Estado global ---------- */
   const state = {
     today: new Date(),
     currentYear: new Date().getFullYear(),
-    currentMonth: new Date().getMonth(), // 0-based
-    events: JSON.parse(localStorage.getItem('agendapro_events') || '{}'),
-    editingDate: null, // chave "YYYY-MM-DD" sendo editada
+    currentMonth: new Date().getMonth(),
+    events: {},          // { "AAAA-MM-DD": [ {id, servico, cliente, horario, valor, status, obs} ] }
+    editingDate: null,
   };
 
   /* ---------- Helpers de data ---------- */
   const pad = (n) => String(n).padStart(2, '0');
-
-  function dateKey(year, month, day) {
-    return `${year}-${pad(month + 1)}-${pad(day)}`;
-  }
-
-  function formatDateDisplay(key) {
-    const [y, m, d] = key.split('-');
-    return `${d}/${m}/${y}`;
-  }
-
+  function dateKey(year, month, day) { return `${year}-${pad(month + 1)}-${pad(day)}`; }
+  function todayKey() { const n = new Date(); return `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(n.getDate())}`; }
   function monthName(month, year) {
-    return new Date(year, month, 1)
-      .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    return new Date(year, month, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   }
 
   const MONTHS_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
@@ -67,7 +58,6 @@
     const selY = document.getElementById('sel-year');
     if (selM) selM.value = state.currentMonth;
     if (selY) {
-      // garante a opção do ano caso esteja fora do range pré-criado
       if (!Array.from(selY.options).some((o) => Number(o.value) === state.currentYear)) {
         const o = document.createElement('option');
         o.value = state.currentYear; o.textContent = state.currentYear;
@@ -79,11 +69,32 @@
     }
   }
 
-  /* ---------- Persistência ---------- */
-  function saveEvents() {
+  /* ---------- Carregamento (API) ---------- */
+  async function carregar() {
     try {
-      localStorage.setItem('agendapro_events', JSON.stringify(state.events));
-    } catch (_) { /* armazenamento indisponível */ }
+      const lista = await JC.api.agendamentos.list(); // todos
+      const map = {};
+      (lista || []).forEach((a) => {
+        const key = a.data;
+        if (!map[key]) map[key] = [];
+        map[key].push({
+          id: a.id,
+          servico: a.servico,
+          cliente: a.cliente,
+          horario: a.horario,
+          valor: a.valor,
+          status: a.status,
+          obs: a.obs,
+        });
+      });
+      state.events = map;
+    } catch (e) {
+      console.error('Falha ao carregar agendamentos:', e);
+      JC.toast('Não foi possível carregar a agenda.', 'error');
+      state.events = {};
+    }
+    renderCalendar();
+    renderTable();
   }
 
   /* ---------- Renderizar calendário ---------- */
@@ -98,10 +109,9 @@
     if (!grid) return;
     grid.innerHTML = '';
 
-    const firstDay = new Date(year, month, 1).getDay(); // 0 = Dom
+    const firstDay = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
 
-    // Células vazias para alinhar o primeiro dia
     for (let i = 0; i < firstDay; i++) {
       const empty = document.createElement('div');
       empty.className = 'day-cell empty';
@@ -112,7 +122,6 @@
       grid.appendChild(empty);
     }
 
-    // Dias do mês
     for (let day = 1; day <= totalDays; day++) {
       const key = dateKey(year, month, day);
       const cell = document.createElement('div');
@@ -123,16 +132,13 @@
       btn.textContent = day;
       btn.setAttribute('aria-label', `${day}/${month + 1}/${year}`);
 
-      // Marcar hoje
       const t = state.today;
       if (t.getFullYear() === year && t.getMonth() === month && t.getDate() === day) {
         btn.classList.add('today');
       }
 
-      // Marcar dias com eventos
       if (state.events[key] && state.events[key].length > 0) {
         btn.classList.add('has-event');
-
         if (state.events[key].length > 1) {
           const badge = document.createElement('span');
           badge.className = 'event-count';
@@ -154,12 +160,9 @@
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    // Coleta e ordena todos os eventos por data
     let allEvents = [];
     for (const [key, evts] of Object.entries(state.events)) {
-      evts.forEach((evt, idx) => {
-        allEvents.push({ key, idx, ...evt });
-      });
+      evts.forEach((evt) => { allEvents.push({ key, ...evt }); });
     }
     allEvents.sort((a, b) => {
       if (a.key !== b.key) return a.key.localeCompare(b.key);
@@ -194,7 +197,7 @@
       return;
     }
 
-    allEvents.forEach(({ key, idx, servico, cliente, horario, valor, status }) => {
+    allEvents.forEach(({ key, id, servico, cliente, horario, valor, status }) => {
       const tr = document.createElement('tr');
 
       const valorNum = parseFloat(valor);
@@ -206,6 +209,7 @@
       const statusMap = {
         confirmado: { label: 'Confirmado', cls: 'confirmado' },
         pendente:   { label: 'Pendente',   cls: 'pendente' },
+        concluido:  { label: 'Concluído',  cls: 'concluido' },
         cancelado:  { label: 'Cancelado',  cls: 'cancelado' },
       };
       const st = statusMap[status] || statusMap.pendente;
@@ -220,99 +224,73 @@
         <td>${horario || '—'}</td>
         <td class="num ${valorClass}">${valorFormatted}</td>
         <td><span class="status-badge ${st.cls}">${st.label}</span></td>
-        <td class="num"><button class="btn-delete" data-key="${key}" data-idx="${idx}" aria-label="Remover"><i class="bi bi-trash3"></i></button></td>
+        <td class="num"><button class="btn-delete" data-id="${id}" aria-label="Remover"><i class="bi bi-trash3"></i></button></td>
       `;
       tbody.appendChild(tr);
     });
 
-    // Listeners de remoção
     tbody.querySelectorAll('.btn-delete').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const { key, idx } = btn.dataset;
-        deleteEvent(key, parseInt(idx, 10));
-      });
+      btn.addEventListener('click', () => deleteEvent(btn.dataset.id));
     });
   }
 
-  /* ---------- Modal ---------- */
-  const overlay = document.getElementById('modal-overlay');
-
+  /* ---------- Modal (padrão dinâmico: JC.modal) ---------- */
   function openModal(key, year, month, day) {
-    state.editingDate = key;
+    var meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    var passado = key < todayKey();
+    // Datas passadas: só Concluído/Cancelado. Hoje/futuro: Confirmado/Pendente/Cancelado.
+    var statusOpts = passado
+      ? [{ value: 'concluido', label: 'Concluído' }, { value: 'cancelado', label: 'Cancelado' }]
+      : [{ value: 'confirmado', label: 'Confirmado' }, { value: 'pendente', label: 'Pendente' }, { value: 'cancelado', label: 'Cancelado' }];
 
-    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    const badge = document.getElementById('modal-date-badge');
-    if (badge) badge.textContent = `${pad(day)} ${months[month]} ${year}`;
-
-    clearForm();
-    const err = document.getElementById('form-error');
-    if (err) err.textContent = '';
-
-    if (!overlay) return;
-    overlay.classList.add('active');
-    overlay.setAttribute('aria-hidden', 'false');
-    setTimeout(() => document.getElementById('field-servico')?.focus(), 120);
-  }
-
-  function closeModal() {
-    if (!overlay) return;
-    overlay.classList.remove('active');
-    overlay.setAttribute('aria-hidden', 'true');
-    state.editingDate = null;
-  }
-
-  function clearForm() {
-    ['field-servico','field-cliente','field-horario','field-valor','field-obs'].forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
+    JC.modal.open({
+      title: 'Novo agendamento',
+      subtitle: pad(day) + ' ' + meses[month] + ' ' + year,
+      submitText: 'Salvar agendamento',
+      fields: [
+        { id: 'servico', label: 'Serviço', type: 'text', required: true, placeholder: 'Ex.: Instalação de painel solar' },
+        { id: 'cliente', label: 'Cliente', type: 'text', required: true, placeholder: 'Nome do cliente' },
+        { id: 'horario', label: 'Horário', type: 'time', required: true, half: true },
+        { id: 'valor', label: 'Valor (R$)', type: 'number', step: '0.01', min: '0', inputmode: 'decimal', half: true, placeholder: '0,00' },
+        { id: 'status', label: 'Status', type: 'select', options: statusOpts },
+        { id: 'obs', label: 'Observações', type: 'textarea', rows: 3, placeholder: 'Opcional' }
+      ],
+      onSubmit: async function (vals) {
+        var status = vals.status || (passado ? 'concluido' : 'confirmado');
+        if (passado && (status === 'confirmado' || status === 'pendente')) {
+          throw new Error('Datas passadas só podem ser registradas como Concluído.');
+        }
+        if (!passado && status === 'concluido') {
+          throw new Error('"Concluído" vale apenas para datas passadas.');
+        }
+        var v = parseFloat(String(vals.valor).replace(',', '.'));
+        var body = {
+          data: key,
+          servico: String(vals.servico).trim(),
+          cliente: String(vals.cliente).trim(),
+          horario: vals.horario,
+          status: status,
+          obs: String(vals.obs || '').trim()
+        };
+        if (!isNaN(v) && v > 0) body.valor = v;
+        await JC.api.agendamentos.create(body); // erro aqui aparece dentro do modal
+        JC.toast('Agendamento salvo com sucesso!', 'success');
+        await carregar();
+      }
     });
-    const status = document.getElementById('field-status');
-    if (status) status.value = 'confirmado';
   }
 
-  function getFormData() {
-    const val = (id) => document.getElementById(id)?.value ?? '';
-    return {
-      servico: val('field-servico').trim(),
-      cliente: val('field-cliente').trim(),
-      horario: val('field-horario'),
-      valor:   val('field-valor'),
-      status:  val('field-status') || 'confirmado',
-      obs:     val('field-obs').trim(),
-    };
-  }
-
-  function saveEvent() {
-    const data = getFormData();
-    const errorEl = document.getElementById('form-error');
-    const setErr = (msg) => { if (errorEl) errorEl.textContent = msg; };
-
-    if (!data.servico) { setErr('Por favor, informe o nome do serviço.'); return; }
-    if (!data.cliente) { setErr('Por favor, informe o nome do cliente.'); return; }
-    if (!data.horario) { setErr('Por favor, informe o horário.'); return; }
-    setErr('');
-
-    const key = state.editingDate;
-    if (!key) return;
-    if (!state.events[key]) state.events[key] = [];
-    state.events[key].push(data);
-
-    saveEvents();
-    renderCalendar();
-    renderTable();
-    closeModal();
-    JC.toast('Agendamento salvo com sucesso!', 'success');
-  }
-
-  function deleteEvent(key, idx) {
-    JC.confirm({ message: 'Deseja remover este agendamento?', confirmText: 'Remover', danger: true }).then(function (ok) {
-      if (!ok || !state.events[key]) return;
-      state.events[key].splice(idx, 1);
-      if (state.events[key].length === 0) delete state.events[key];
-      saveEvents();
-      renderCalendar();
-      renderTable();
-      JC.toast('Agendamento removido.', 'success');
+  function deleteEvent(id) {
+    JC.confirm({ message: 'Deseja remover este agendamento?', confirmText: 'Remover', danger: true }).then(async function (ok) {
+      if (!ok) return;
+      try {
+        await JC.api.agendamentos.remove(id);
+        JC.toast('Agendamento removido.', 'success');
+        await carregar();
+      } catch (e) {
+        console.error(e);
+        JC.toast('Erro ao remover o agendamento.', 'error');
+      }
     });
   }
 
@@ -346,29 +324,17 @@
     renderCalendar();
   });
 
-  document.getElementById('btn-save')?.addEventListener('click', saveEvent);
-  document.getElementById('btn-cancel-modal')?.addEventListener('click', closeModal);
-  document.getElementById('modal-close')?.addEventListener('click', closeModal);
-
-  // Fechar modal clicando fora
-  overlay?.addEventListener('click', (e) => {
-    if (e.target === overlay) closeModal();
-  });
-
-  // Fechar com ESC
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && overlay?.classList.contains('active')) closeModal();
-  });
-
-  // Salvar com Enter (dentro do modal, fora do textarea/botão)
-  overlay?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
-      saveEvent();
-    }
-  });
+  // Modal agora é gerenciado pelo JC.modal (fecha sozinho por ESC/backdrop).
 
   /* ---------- Init ---------- */
+  if (!document.getElementById('cal-extra-style')) {
+    const st = document.createElement('style');
+    st.id = 'cal-extra-style';
+    st.textContent = '.status-badge.concluido{background:#e7f6ee;color:#0a7a4a;}';
+    document.head.appendChild(st);
+  }
   populateSelectors();
   renderCalendar();
   renderTable();
+  carregar();
 })();

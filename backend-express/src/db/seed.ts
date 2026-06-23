@@ -6,12 +6,13 @@
 import { hoje, inicioMes, somaDias, somaMeses, ymd } from "../dates";
 import { db } from "./client";
 import {
-  agendamentos, funcionarios, lancamentos, pagamentos, projetoMembros, projetos,
+  agendamentos, funcionarios, jornadas, lancamentos, pagamentos, projetoMembros, projetos,
 } from "./schema";
 
 async function run() {
   // limpa na ordem das dependências (FK)
   await db.delete(projetoMembros);
+  await db.delete(jornadas);
   await db.delete(pagamentos);
   await db.delete(agendamentos);
   await db.delete(lancamentos);
@@ -29,9 +30,11 @@ async function run() {
   // ---- Funcionários ----
   const funcs = await db.insert(funcionarios).values([
     { nome: "Maria Souza", funcao: "Engenheira eletricista", setor: "Elétrica", contrato: "CLT",
-      admissao: "2023-02-10", salario: "8200", status: "ativo", email: "maria.souza@jcsolar.com", telefone: "(84) 99999-0001" },
+      admissao: "2023-02-10", salario: "8200", status: "ativo", email: "maria.souza@jcsolar.com", telefone: "(84) 99999-0001",
+      cpf: "123.456.789-00", nascimento: "1990-04-12", endereco: "Rua das Dunas, 120 — Natal/RN" },
     { nome: "Carlos Lima", funcao: "Técnico em energia solar", setor: "Solar", contrato: "CLT",
-      admissao: "2024-06-01", salario: "3800", status: "ativo", email: "carlos.lima@jcsolar.com", telefone: "(84) 99999-0002" },
+      admissao: "2024-06-01", salario: "3800", status: "ativo", email: "carlos.lima@jcsolar.com", telefone: "(84) 99999-0002",
+      cpf: "987.654.321-00", nascimento: "1995-09-03", endereco: "Av. Solar, 45 — Parnamirim/RN" },
     { nome: "João Pedro", funcao: "Eletricista", setor: "Elétrica", contrato: "CLT",
       admissao: "2022-09-15", salario: "3200", status: "ferias", email: "joao.pedro@jcsolar.com", telefone: "(84) 99999-0003" },
     { nome: "Ana Beatriz", funcao: "Vendedora", setor: "Comercial", contrato: "PJ",
@@ -94,7 +97,14 @@ async function run() {
     { funcionarioId: funcs[3]!.id, tipo: "Comissão", forma: "Pix", data: dia(6), competencia: comp, valor: "950", obs: "Meta de vendas atingida" },
   ]);
 
-  console.log(`Seed concluído: ${funcs.length} funcionários, ${lanc.length} lançamentos, ${projs.length} projetos, 5 agendamentos, 3 pagamentos.`);
+  // ---- Jornadas (registro de trabalho) ----
+  await db.insert(jornadas).values([
+    { funcionarioId: funcs[0]!.id, data: dia(3), entrada: "08:00", saida: "17:00", atividade: "Vistoria e projeto elétrico — Cond. Vila Verde", despesa: "0" },
+    { funcionarioId: funcs[0]!.id, data: dia(4), entrada: "08:30", saida: "18:00", atividade: "Instalação de quadro de distribuição", despesa: "120", despesaDesc: "Combustível" },
+    { funcionarioId: funcs[1]!.id, data: dia(4), entrada: "07:30", saida: "16:30", atividade: "Montagem de painéis solares — Padaria São José", despesa: "45", despesaDesc: "Material de fixação" },
+  ]);
+
+  console.log(`Seed concluído: ${funcs.length} funcionários, ${lanc.length} lançamentos, ${projs.length} projetos, 5 agendamentos, 3 pagamentos, 3 jornadas.`);
 }
 
 run()
