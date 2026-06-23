@@ -5,15 +5,14 @@
     "moduleResolution": "node10",
     "lib": ["ES2022"],
     "outDir": "dist",
-    "rootDir": ".",
+    "rootDir": "src",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "sourceMap": true,
-    "removeComments": true
+    "sourceMap": true
   },
-  "include": ["src", "drizzle.config.ts"]
+  "include": ["src"]
 }
