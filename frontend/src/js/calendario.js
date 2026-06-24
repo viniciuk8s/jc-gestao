@@ -1,7 +1,10 @@
 /* ============================================================
    calendario.js — Agenda
    Calendário, tabela de serviços e modal de agendamento.
-   Dados via API (JC.api.agendamentos).
+   Dados via API (JC.api.agendamentos). Cada serviço pode ter
+   colaboradores (funcionários cadastrados) — JC.api.agendamentos
+   já devolve/aceita "membros". Clicar num serviço da tabela abre
+   o modal em modo edição (UPDATE); clicar num dia cria um novo.
    ============================================================ */
 'use strict';
 
@@ -10,14 +13,17 @@
 
   var JC = window.JC;
   var escHtml = JC.esc;
+  var colorFor = JC.color;
+  var initials = JC.initials;
 
   /* ---------- Estado global ---------- */
   const state = {
     today: new Date(),
     currentYear: new Date().getFullYear(),
     currentMonth: new Date().getMonth(),
-    events: {},          // { "AAAA-MM-DD": [ {id, servico, cliente, horario, valor, status, obs} ] }
-    editingDate: null,
+    events: {},          // { "AAAA-MM-DD": [ {id, servico, cliente, horario, valor, status, obs, membros} ] }
+    emps: [],            // funcionários (API) p/ o seletor: [{nome, foto}]
+    empFoto: {},         // índice nome -> foto (dataURL/URL) p/ os avatares
   };
 
   /* ---------- Helpers de data ---------- */
@@ -30,7 +36,14 @@
 
   const MONTHS_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                        'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const MESES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const WEEKDAYS_SHORT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const STATUS_MAP = {
+    confirmado: { label: 'Confirmado', cls: 'confirmado' },
+    pendente:   { label: 'Pendente',   cls: 'pendente' },
+    concluido:  { label: 'Concluído',  cls: 'concluido' },
+    cancelado:  { label: 'Cancelado',  cls: 'cancelado' },
+  };
 
   /* ---------- Seletores de mês/ano ---------- */
   function populateSelectors() {
@@ -72,7 +85,7 @@
   /* ---------- Carregamento (API) ---------- */
   async function carregar() {
     try {
-      const lista = await JC.api.agendamentos.list(); // todos
+      const lista = await JC.api.agendamentos.list(); // todos (já trazem "membros")
       const map = {};
       (lista || []).forEach((a) => {
         const key = a.data;
@@ -85,6 +98,7 @@
           valor: a.valor,
           status: a.status,
           obs: a.obs,
+          membros: a.membros || [],
         });
       });
       state.events = map;
@@ -95,6 +109,28 @@
     }
     renderCalendar();
     renderTable();
+  }
+
+  // Funcionários cadastrados (para o seletor de colaboradores) — direto da API.
+  // Guarda nome + foto, e um índice por nome para resolver a foto na tabela.
+  async function carregarFuncionarios() {
+    try {
+      const lista = await JC.api.funcionarios.list();
+      state.emps = (lista || []).map((f) => ({ nome: f.nome, foto: f.foto || '' }));
+      state.empFoto = {};
+      state.emps.forEach((e) => { state.empFoto[e.nome] = e.foto; });
+    } catch (e) {
+      state.emps = []; state.empFoto = {}; // ainda sem funcionários cadastrados
+    }
+    renderTable(); // atualiza os avatares da tabela com as fotos quando os funcionários chegam
+  }
+
+  function findEvent(id) {
+    for (const k in state.events) {
+      const hit = state.events[k].find((e) => String(e.id) === String(id));
+      if (hit) return Object.assign({ key: k }, hit);
+    }
+    return null;
   }
 
   /* ---------- Renderizar calendário ---------- */
@@ -147,10 +183,25 @@
         }
       }
 
-      btn.addEventListener('click', () => openModal(key, year, month, day));
+      // Clique no dia: novo agendamento naquela data.
+      btn.addEventListener('click', () => abrirModal(key, null));
       cell.appendChild(btn);
       grid.appendChild(cell);
     }
+  }
+
+  function membrosAvatares(membros) {
+    if (!membros || !membros.length) return '';
+    const max = 5;
+    let html = membros.slice(0, max).map((m) => {
+      const foto = state.empFoto[m.nome];
+      if (foto) {
+        return `<span class="svc-av photo" style="background-image:url('${foto}')" title="${escHtml(m.nome)}"></span>`;
+      }
+      return `<span class="svc-av" style="background:${colorFor(m.nome)}" title="${escHtml(m.nome)}">${escHtml(initials(m.nome))}</span>`;
+    }).join('');
+    if (membros.length > max) html += `<span class="svc-av more" title="mais ${membros.length - max}">+${membros.length - max}</span>`;
+    return `<div class="svc-membros">${html}</div>`;
   }
 
   /* ---------- Renderizar tabela ---------- */
@@ -197,8 +248,10 @@
       return;
     }
 
-    allEvents.forEach(({ key, id, servico, cliente, horario, valor, status }) => {
+    allEvents.forEach(({ key, id, servico, cliente, horario, valor, status, membros }) => {
       const tr = document.createElement('tr');
+      tr.className = 'svc-row';
+      tr.dataset.id = id;
 
       const valorNum = parseFloat(valor);
       const valorFormatted = !isNaN(valorNum) && valorNum > 0
@@ -206,75 +259,107 @@
         : '—';
       const valorClass = (!isNaN(valorNum) && valorNum > 0) ? 'value-cell' : 'value-cell zero';
 
-      const statusMap = {
-        confirmado: { label: 'Confirmado', cls: 'confirmado' },
-        pendente:   { label: 'Pendente',   cls: 'pendente' },
-        concluido:  { label: 'Concluído',  cls: 'concluido' },
-        cancelado:  { label: 'Cancelado',  cls: 'cancelado' },
-      };
-      const st = statusMap[status] || statusMap.pendente;
-
+      const st = STATUS_MAP[status] || STATUS_MAP.pendente;
       const [yy, mm, dd] = key.split('-');
       const weekday = WEEKDAYS_SHORT[new Date(key + 'T00:00:00').getDay()];
 
       tr.innerHTML = `
         <td><div class="svc-date">${dd}/${mm}<span class="wd">${weekday}</span></div></td>
-        <td class="svc-name">${escHtml(servico)}</td>
+        <td class="svc-name">${escHtml(servico)}${membrosAvatares(membros)}</td>
         <td>${escHtml(cliente)}</td>
         <td>${horario || '—'}</td>
         <td class="num ${valorClass}">${valorFormatted}</td>
         <td><span class="status-badge ${st.cls}">${st.label}</span></td>
-        <td class="num"><button class="btn-delete" data-id="${id}" aria-label="Remover"><i class="bi bi-trash3"></i></button></td>
+        <td class="num svc-actions">
+          <button class="btn-edit" data-id="${id}" aria-label="Editar"><i class="bi bi-pencil"></i></button>
+          <button class="btn-delete" data-id="${id}" aria-label="Remover"><i class="bi bi-trash3"></i></button>
+        </td>
       `;
       tbody.appendChild(tr);
     });
 
+    // Editar: botão ou clique na linha (menos nos botões de ação)
+    tbody.querySelectorAll('.btn-edit').forEach((btn) => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); editar(btn.dataset.id); });
+    });
     tbody.querySelectorAll('.btn-delete').forEach((btn) => {
-      btn.addEventListener('click', () => deleteEvent(btn.dataset.id));
+      btn.addEventListener('click', (e) => { e.stopPropagation(); deleteEvent(btn.dataset.id); });
+    });
+    tbody.querySelectorAll('.svc-row').forEach((row) => {
+      row.addEventListener('click', () => editar(row.dataset.id));
     });
   }
 
-  /* ---------- Modal (padrão dinâmico: JC.modal) ---------- */
-  function openModal(key, year, month, day) {
-    var meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    var passado = key < todayKey();
-    // Datas passadas: só Concluído/Cancelado. Hoje/futuro: Confirmado/Pendente/Cancelado.
-    var statusOpts = passado
+  function editar(id) {
+    const ev = findEvent(id);
+    if (ev) abrirModal(ev.key, ev);
+  }
+
+  /* ---------- Modal: cria (existente=null) ou edita (existente=obj) ---------- */
+  function abrirModal(key, existente) {
+    const d = new Date(key + 'T00:00:00');
+    const subtitle = pad(d.getDate()) + ' ' + MESES_CURTO[d.getMonth()] + ' ' + d.getFullYear();
+    const passado = key < todayKey();
+    const editId = existente ? existente.id : '';
+
+    // Datas passadas: Concluído/Cancelado. Hoje/futuro: Confirmado/Pendente/Cancelado.
+    let statusOpts = passado
       ? [{ value: 'concluido', label: 'Concluído' }, { value: 'cancelado', label: 'Cancelado' }]
       : [{ value: 'confirmado', label: 'Confirmado' }, { value: 'pendente', label: 'Pendente' }, { value: 'cancelado', label: 'Cancelado' }];
+    // Ao editar, garante que o status atual apareça mesmo se fugir da regra (dado antigo)
+    if (existente && existente.status && !statusOpts.some((o) => o.value === existente.status)) {
+      statusOpts.unshift({ value: existente.status, label: (STATUS_MAP[existente.status] || {}).label || existente.status });
+    }
+
+    const emps = state.emps || [];
+    const membrosSel = (existente && existente.membros ? existente.membros : []).map((m) => m.nome);
 
     JC.modal.open({
-      title: 'Novo agendamento',
-      subtitle: pad(day) + ' ' + meses[month] + ' ' + year,
-      submitText: 'Salvar agendamento',
+      title: editId ? 'Editar agendamento' : 'Novo agendamento',
+      subtitle: subtitle,
+      submitText: editId ? 'Salvar alterações' : 'Salvar agendamento',
+      maxWidth: '560px',
       fields: [
-        { id: 'servico', label: 'Serviço', type: 'text', required: true, placeholder: 'Ex.: Instalação de painel solar' },
-        { id: 'cliente', label: 'Cliente', type: 'text', required: true, placeholder: 'Nome do cliente' },
-        { id: 'horario', label: 'Horário', type: 'time', required: true, half: true },
-        { id: 'valor', label: 'Valor (R$)', type: 'number', step: '0.01', min: '0', inputmode: 'decimal', half: true, placeholder: '0,00' },
-        { id: 'status', label: 'Status', type: 'select', options: statusOpts },
-        { id: 'obs', label: 'Observações', type: 'textarea', rows: 3, placeholder: 'Opcional' }
+        { id: 'servico', label: 'Serviço', type: 'text', required: true, value: existente ? existente.servico || '' : '', placeholder: 'Ex.: Instalação de painel solar' },
+        { id: 'cliente', label: 'Cliente', type: 'text', required: true, value: existente ? existente.cliente || '' : '', placeholder: 'Nome do cliente' },
+        { id: 'horario', label: 'Horário', type: 'time', required: true, half: true, value: existente ? existente.horario || '' : '' },
+        { id: 'valor', label: 'Valor (R$)', type: 'number', step: '0.01', min: '0', inputmode: 'decimal', half: true,
+          value: existente && existente.valor != null && Number(existente.valor) !== 0 ? existente.valor : '', placeholder: '0,00' },
+        { id: 'status', label: 'Status', type: 'select', options: statusOpts,
+          value: existente ? existente.status : (passado ? 'concluido' : 'confirmado') },
+        { id: 'colaboradores', label: 'Colaboradores (funcionários)', type: 'chips', value: membrosSel,
+          options: emps.map((e) => ({ value: e.nome, label: e.nome,
+            avatar: { color: colorFor(e.nome), initials: initials(e.nome), image: e.foto || '' } })),
+          hint: emps.length ? 'Toque para incluir/remover quem vai no serviço.' : 'Cadastre funcionários para escolher aqui.' },
+        { id: 'obs', label: 'Observações', type: 'textarea', rows: 3, value: existente ? existente.obs || '' : '', placeholder: 'Opcional' }
       ],
       onSubmit: async function (vals) {
-        var status = vals.status || (passado ? 'concluido' : 'confirmado');
-        if (passado && (status === 'confirmado' || status === 'pendente')) {
-          throw new Error('Datas passadas só podem ser registradas como Concluído.');
+        const status = vals.status || (passado ? 'concluido' : 'confirmado');
+        const statusMudou = !existente || status !== existente.status;
+        if (statusMudou) {
+          if (passado && (status === 'confirmado' || status === 'pendente')) {
+            throw new Error('Datas passadas só podem ser Concluído ou Cancelado.');
+          }
+          if (!passado && status === 'concluido') {
+            throw new Error('"Concluído" vale apenas para datas passadas.');
+          }
         }
-        if (!passado && status === 'concluido') {
-          throw new Error('"Concluído" vale apenas para datas passadas.');
-        }
-        var v = parseFloat(String(vals.valor).replace(',', '.'));
-        var body = {
+        const v = parseFloat(String(vals.valor).replace(',', '.'));
+        const membros = (vals.colaboradores || []).map((n) => ({ nome: n, tipo: 'funcionario' }));
+        const body = {
           data: key,
           servico: String(vals.servico).trim(),
           cliente: String(vals.cliente).trim(),
           horario: vals.horario,
           status: status,
-          obs: String(vals.obs || '').trim()
+          obs: String(vals.obs || '').trim(),
+          membros: membros
         };
         if (!isNaN(v) && v > 0) body.valor = v;
-        await JC.api.agendamentos.create(body); // erro aqui aparece dentro do modal
-        JC.toast('Agendamento salvo com sucesso!', 'success');
+
+        if (editId) await JC.api.agendamentos.update(editId, body);
+        else await JC.api.agendamentos.create(body);
+        JC.toast(editId ? 'Agendamento atualizado!' : 'Agendamento salvo com sucesso!', 'success');
         await carregar();
       }
     });
@@ -324,17 +409,25 @@
     renderCalendar();
   });
 
-  // Modal agora é gerenciado pelo JC.modal (fecha sozinho por ESC/backdrop).
-
   /* ---------- Init ---------- */
   if (!document.getElementById('cal-extra-style')) {
     const st = document.createElement('style');
     st.id = 'cal-extra-style';
-    st.textContent = '.status-badge.concluido{background:#e7f6ee;color:#0a7a4a;}';
+    st.textContent =
+      '.status-badge.concluido{background:#e7f6ee;color:#0a7a4a;}' +
+      '.svc-row{cursor:pointer;}' +
+      '.svc-actions{white-space:nowrap;}' +
+      '.btn-edit{background:none;border:0;color:var(--text-muted,#9AA6BC);cursor:pointer;padding:6px;border-radius:6px;}' +
+      '.btn-edit:hover{color:var(--brand,#F97315);background:rgba(249,115,21,.12);}' +
+      '.svc-membros{display:flex;gap:3px;margin-top:5px;flex-wrap:wrap;}' +
+      '.svc-av{width:20px;height:20px;border-radius:50%;font-size:9px;font-weight:700;color:#fff;display:inline-flex;align-items:center;justify-content:center;line-height:1;}' +
+      '.svc-av.photo{background-size:cover;background-position:center;}' +
+      '.svc-av.more{background:#64748b;}';
     document.head.appendChild(st);
   }
   populateSelectors();
   renderCalendar();
   renderTable();
+  carregarFuncionarios();
   carregar();
 })();
