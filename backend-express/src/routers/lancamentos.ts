@@ -21,9 +21,13 @@ r.get("/", async (req, res) => {
     d.setDate(d.getDate() - q.dias);
     conds.push(gte(lancamentos.data, d.toISOString().slice(0, 10)));
   }
-  const rows = await db.select().from(lancamentos)
+  const base = db.select().from(lancamentos)
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(desc(lancamentos.data), desc(lancamentos.id));
+  let qb = base.$dynamic();
+  if (q.limit !== undefined) qb = qb.limit(q.limit);
+  if (q.offset !== undefined) qb = qb.offset(q.offset);
+  const rows = await qb;
   res.json(rows.map(out));
 });
 

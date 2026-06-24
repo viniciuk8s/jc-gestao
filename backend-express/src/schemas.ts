@@ -9,6 +9,10 @@ const compStr = z.string().regex(/^\d{4}-\d{2}$/, "Competência deve estar no fo
 const money = z.coerce.number({ invalid_type_error: "Valor inválido" })
   .nonnegative("Valor não pode ser negativo");
 
+// Paginação opcional (retrocompatível): sem limit, retorna tudo como antes.
+const limit = z.coerce.number().int().positive().max(1000).optional();
+const offset = z.coerce.number().int().nonnegative().optional();
+
 // ---------- Funcionários ----------
 export const funcionarioCreate = z.object({
   nome: z.string().trim().min(1, "Nome é obrigatório").max(120),
@@ -29,6 +33,7 @@ export const funcionarioUpdate = funcionarioCreate.partial();
 export const funcionarioQuery = z.object({
   setor: z.string().optional(),
   status: z.string().optional(),
+  limit, offset,
 });
 
 // ---------- Lançamentos (fluxo de caixa) ----------
@@ -46,6 +51,7 @@ export const lancamentoQuery = z.object({
   tipo: z.enum(["entrada", "saida"]).optional(),
   status: z.string().optional(),
   dias: z.coerce.number().int().positive().optional(),
+  limit, offset,
 });
 
 // ---------- Projetos (com membros) ----------
@@ -81,6 +87,7 @@ export const agendamentoQuery = z.object({
   de: dateStr.optional(),
   ate: dateStr.optional(),
   status: z.string().optional(),
+  limit, offset,
 });
 
 // ---------- Pagamentos ----------
@@ -97,6 +104,7 @@ export const pagamentoUpdate = pagamentoCreate.partial();
 export const pagamentoQuery = z.object({
   funcionario_id: z.coerce.number().int().positive().optional(),
   competencia: z.string().optional(),
+  limit, offset,
 });
 
 // ---------- Jornadas (registro de trabalho) ----------
@@ -115,6 +123,7 @@ export const jornadaQuery = z.object({
   funcionario_id: z.coerce.number().int().positive().optional(),
   de: dateStr.optional(),
   ate: dateStr.optional(),
+  limit, offset,
 });
 
 // Tipos de entrada

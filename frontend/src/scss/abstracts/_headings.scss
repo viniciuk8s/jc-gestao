@@ -13,9 +13,9 @@ body {
 
 h1 {
   font-family: var(--font-display);
-  text-transform: uppercase;     // nomes apresentativos em caixa alta
-  letter-spacing: .045em;
-  font-weight: 700;
+  text-transform: none;          // sentence case (estilo dashboard)
+  letter-spacing: -.02em;
+  font-weight: 800;
   line-height: 1.1;
 }
 

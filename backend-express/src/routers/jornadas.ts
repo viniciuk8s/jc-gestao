@@ -33,12 +33,16 @@ r.get("/", async (req, res) => {
   if (q.funcionario_id) conds.push(eq(jornadas.funcionarioId, q.funcionario_id));
   if (q.de) conds.push(gte(jornadas.data, q.de));
   if (q.ate) conds.push(lte(jornadas.data, q.ate));
-  const rows = await db
+  const base = db
     .select({ j: jornadas, nome: funcionarios.nome })
     .from(jornadas)
     .leftJoin(funcionarios, eq(jornadas.funcionarioId, funcionarios.id))
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(desc(jornadas.data), desc(jornadas.id));
+  let qb = base.$dynamic();
+  if (q.limit !== undefined) qb = qb.limit(q.limit);
+  if (q.offset !== undefined) qb = qb.offset(q.offset);
+  const rows = await qb;
   res.json(rows.map((row) => out(row.j, row.nome)));
 });
 

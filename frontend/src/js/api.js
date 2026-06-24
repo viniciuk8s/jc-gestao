@@ -52,14 +52,28 @@
       body: body,
     });
 
-    // sessão inválida/expirada -> volta para o login
-    if (res.status === 401 || res.status === 403) {
+    // 401 = sessão inválida/expirada -> desloga e volta para o login
+    if (res.status === 401) {
       try { await window.SB.auth.signOut(); } catch (e) {}
       // evita loop: só redireciona se ainda NÃO estiver na tela de login
       if (!/(^|\/)login\.html$/.test(window.location.pathname)) {
         window.location.replace("login.html");
       }
       throw new Error("Sessão expirada. Faça login novamente.");
+    }
+
+    // 403 = autenticado, porém SEM permissão -> NÃO desloga; informa o usuário.
+    // (ex.: perfil "viewer" tentando uma ação de escrita)
+    if (res.status === 403) {
+      var ptext = await res.text();
+      var pdata = null;
+      if (ptext) { try { pdata = JSON.parse(ptext); } catch (e) {} }
+      var pmsg = (pdata && (pdata.detail || pdata.error || pdata.message)) ||
+        "Você não tem permissão para esta ação.";
+      var pe = new Error(pmsg);
+      pe.status = 403;
+      pe.data = pdata;
+      throw pe;
     }
 
     if (res.status === 204) return null;

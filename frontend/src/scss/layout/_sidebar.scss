@@ -1,6 +1,7 @@
 // ============================================================
-//  layout/_sidebar.scss — menu lateral (+ estado rail e mobile)
-//  origem: sidebar.css  (+ ajustes mobile de responsive.css)
+//  layout/_sidebar.scss — menu lateral (dark SaaS)
+//  Marca (topo) -> navegação (seções) -> rodapé (recolher).
+//  O perfil/relógio agora vivem no header (.app-header).
 // ============================================================
 @use '../abstracts' as *;
 
@@ -8,214 +9,193 @@ aside { position: sticky; }
 
 .sidebar {
   position: fixed;
-  top: 0;
+  top: 0; left: 0;
   width: var(--sidebar-w);
   height: 100%;
   z-index: var(--z-sidebar);
   display: flex;
   flex-direction: column;
   color: var(--text);
-  background:
-    radial-gradient(circle at top right, rgba(239, 106, 1, .04), transparent 420px),
-    var(--surface);
+  background: var(--surface-solid);
   border-right: 1px solid var(--line);
   transform: translateX(-100%);
   transition: transform .3s var(--ease), width .25s var(--ease);
-  background-color: #14171af1;
-  margin-left: -6px;
 
-  &.show {
-    left: 0;
-    transform: translateX(0);
-  }
+  &.show { transform: translateX(0); }
 }
 
-// ---------- Header ----------
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  height: 150px;
-  padding: 52px 20px;
-  margin-top: 150px;   // NOTA: empurra o header 150px p/ baixo (gap grande no topo) — revisar
+// ---------- Marca (topo) ----------
+.sidebar-brand {
+  display: flex; align-items: center; gap: 12px;
+  height: 58px;                 // alinha com a altura do header
+  padding: 0 18px;
   border-bottom: 1px solid var(--line);
 }
-
-.logo-texts { display: flex; flex-direction: column; }
-
-.sidebar-logo-sub {
-  
+.brand-mark {
+  width: 36px; height: 36px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-md);
+  background: var(--brand-soft);
+  border: 1px solid var(--brand-line);
+  overflow: hidden;
+  img { width: 22px; height: 22px; object-fit: contain; }
+}
+.brand-texts { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.brand-name {
+  font-size: 14px; font-weight: 700; letter-spacing: -.01em;
+  color: var(--heading);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.brand-sub {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
   color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: .1em;
 }
 
 .close-btn {
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: var(--border-radius);
-  background: none;
-  color: var(--text-dim);
+  margin-left: auto;
+  width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-muted);
   cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+  i { color: inherit; padding: 0; }
+  &:hover { color: var(--brand); border-color: var(--brand-line); }
 }
 
-// ---------- Nav ----------
+// ---------- Navegação ----------
 .sidebar-nav {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px 12px;
-  margin-top: 25px;
-
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 12px;
+  overflow-y: auto;
 }
-
 .nav-section-title {
-
   font-family: var(--font-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: .15em;
-  color: var(--brand);
-  padding: 10px;
- 
-  margin: 8px 0;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .14em;
+  color: var(--text-dim);
+  padding: 14px 12px 6px;
+  &:first-child { padding-top: 4px; }
 }
 
 .nav-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 12px;
   border: 1px solid transparent;
   border-radius: var(--r-md);
   background: none;
   cursor: pointer;
-  transition: transform var(--transition), background var(--transition), border-color var(--transition);
-  .nav-icon { padding: 23px; border: 1px solid var(--brand);}
-  i { color: var(--text); }
-  margin-top: -10px;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+
+  i { color: var(--text-muted); padding: 0; }
 
   &:hover {
-
-    border-color: var(--border);
-
-    .nav-icon { background-color: var(--brand-strong); }
-    .nav-icon i { color: #fff; }
+    background: var(--surface);
+    .nav-icon { border-color: var(--brand-line); }
+    .nav-icon i { color: var(--brand); }
+    .nav-label { color: var(--text); }
   }
 
   &.active {
-        transform: translateY(-2px);
-    
-    .nav-icon { background-color: var(--brand); }
-    i { color: var(--brand); }
+    background: var(--brand-soft);
+    border-color: var(--brand-line);
+    &::before {
+      content: "";
+      position: absolute;
+      left: -1px; top: 50%;
+      transform: translateY(-50%);
+      width: 3px; height: 60%;
+      border-radius: 0 var(--r-full) var(--r-full) 0;
+      background: var(--brand);
+    }
+    .nav-icon { background: var(--brand); border-color: transparent; }
+    .nav-icon i { color: #fff; }
+    .nav-label { color: var(--heading); font-weight: 700; }
   }
 }
-
-.active-icon i { color: #fff !important; }
-
 
 .nav-icon {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--brand-line);
+  width: 34px; height: 34px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  transition: background var(--transition);
-
-  i {
-    padding-left: 5px;
-    font-size: 20px;
-  }
+  background: var(--surface);
+  transition: background var(--transition), border-color var(--transition);
+  i { font-size: 17px; padding: 0; }
 }
-
 .nav-label {
-  flex: 1;
-  text-align: left;
-  font-size: 17px;
-  font-weight: 500;
-  color: var(--text-muted);
+  flex: 1; text-align: left;
+  font-size: 14px; font-weight: 600; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-.active-label {
-  padding: 10px;
-  color: var(--brand-strong);
-  font-weight: 700;
-}
-.active-label-primary { color: var(--brand) !important; }
+// Helpers aplicados pelo JS
+.active-icon i { color: #fff !important; }
+.active-label,
+.active-label-primary { color: var(--heading) !important; font-weight: 700; }
 .active-badge,
 .active-badge-primary { color: var(--brand) !important; }
 
-.divider {
-  height: 1px;
-  background: var(--border);
-  margin: 10px 8px;
+.divider { height: 1px; background: var(--line); margin: 10px 12px; }
+
+// ---------- Rodapé (recolher — desktop) ----------
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+.collapse-btn {
+  width: 100%;
+  height: 40px;
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 0 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+
+  i { color: inherit !important; padding: 0; font-size: 1.15rem; }
+  .collapse-label { font-size: 13px; font-weight: 600; }
+  &:hover { border-color: var(--brand-line); color: var(--brand); background: var(--surface-2); }
 }
 
 // ---------- Overlay (mobile) ----------
 .overlay {
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   background: rgba(0, 0, 0, .6);
   backdrop-filter: blur(2px);
   z-index: var(--z-overlay);
   display: none;
-
   &.show { display: block; }
 }
 
-// ---------- Botão recolher ----------
-.collapse-btn {
-
-  padding-top: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: transparent;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: transform var(--transition);
-
-  i { color: var(--text) !important; }
-  &:hover i { color: var(--brand) !important; }
-}
-
-#btn-icon-collapse { font-size: 1.2rem !important; }
-
 // ============================================================
-//  DESKTOP (>= 1024px): sidebar sempre visível + estado rail
+//  DESKTOP (>= 1024px): sempre visível + estado rail
 // ============================================================
 @include respond-min('lg') {
   .sidebar { transform: none; }
   .close-btn { display: none; }
 
-  // Estado recolhido (rail). A margem-base do .main-content fica em _main;
-  // aqui só o override do estado recolhido (irmão da sidebar).
   .sidebar.collapsed {
     width: var(--sidebar-w-collapsed);
-
     ~ .main-content { margin-left: var(--sidebar-w-collapsed); }
 
+    .brand-texts,
     .nav-label,
     .badge,
     .nav-section-title,
-    .logo-texts,
-    .profile-meta,
-    .chevron { display: none; }
+    .collapse-label { display: none; }
 
-    .nav-item,
-    .profile-btn { justify-content: center; }
-
-    .sidebar-header { justify-content: center; }
-    .collapse-btn { margin-left: 0; }
+    .sidebar-brand { justify-content: center; padding-left: 0; padding-right: 0; }
+    .nav-item { justify-content: center; padding-left: 0; padding-right: 0; }
+    .nav-item.active::before { display: none; }
+    .collapse-btn { justify-content: center; gap: 0; padding: 0; }
   }
 }
 
@@ -223,12 +203,11 @@ aside { position: sticky; }
 //  MOBILE (< 1024px)
 // ============================================================
 @include respond(1023px) {
-  .collapse-btn { display: none; }
-  .sidebar.collapsed { width: var(--sidebar-w); } // "collapsed" do desktop não se aplica
-  .logo.desktop { display: none !important; }     // (de responsive.css)
+  .sidebar-footer { display: none; }   // recolher é só desktop
+  .sidebar.collapsed { width: var(--sidebar-w); }
+  .logo.desktop { display: none !important; }
 }
 
-// Escala mobile da sidebar (de responsive.css)
 @include respond('md') {
   .nav-label { font-size: 15px; }
 }

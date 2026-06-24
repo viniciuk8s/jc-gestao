@@ -1,85 +1,126 @@
 // ============================================================
-//  layout/_topbar.scss — topbar mobile + sidebar off-canvas
-//  origem: mobile.css
+//  layout/_topbar.scss — HEADER superior (desktop + mobile)
+//  Desktop: barra à direita da sidebar, relógio à esq. e perfil à dir.
+//  Mobile: vira o topbar (menu + logo à esq., perfil à dir.).
 // ============================================================
 @use '../abstracts' as *;
 
-.mobile-topbar {
+.app-header {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: var(--z-topbar);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--surface);
+  gap: 12px;
+  height: 58px;
+  padding: 0 16px;
+  background: var(--header-bg);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  backdrop-filter: blur(14px) saturate(130%);
   border-bottom: 1px solid var(--line);
   box-shadow: var(--shadow-sm);
-  background-color: #1C1919;
+  transition: left .25s var(--ease);
 }
 
-.menu-btn {
-  width: 44px;
-  height: 44px;
-  display: flex;
+.header-grow { flex: 1; }
+
+// Relógio (desktop, à esquerda)
+.header-clock {
+  display: none;                 // aparece só no desktop
   align-items: center;
-  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  color: var(--text-dim);
+}
+
+// Menu hambúrguer (mobile)
+.menu-btn {
+  width: 42px; height: 42px;
+  flex: none;
+  display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface-2);
   color: var(--text);
   cursor: pointer;
-  transition: background var(--transition), color var(--transition);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
 
-  &:hover { background: var(--brand-strong); color: #fff; }
+  &:hover { background: var(--brand-soft); border-color: var(--brand-line); color: var(--brand); }
   i { padding: 0; font-size: 22px; color: inherit; }
 }
 
+// Logo (mobile)
 .mobile-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: flex; align-items: center; gap: 9px;
+  img { width: 28px; height: 28px; object-fit: contain; }
 }
 .logo-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: .04em;
+  font-size: 15px; font-weight: 700; letter-spacing: -.01em;
+  color: var(--heading);
 }
+
+// Toggle de tema (claro/escuro) — ao lado do perfil
+.theme-toggle {
+  width: 38px; height: 38px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+
+  i { padding: 0; font-size: 17px; color: inherit; }
+  &:hover { color: var(--brand); border-color: var(--brand-line); background: var(--surface-2); }
+}
+// mostra o ícone do tema ATUAL (lua no escuro, sol no claro)
+.theme-toggle .theme-ico-light { display: none; }
+html[data-theme="light"] .theme-toggle .theme-ico-dark  { display: none; }
+html[data-theme="light"] .theme-toggle .theme-ico-light { display: inline; }
+// o ícone do tema ATIVO (o visível) fica laranja
+.theme-toggle .theme-ico-dark,
+.theme-toggle .theme-ico-light { color: var(--brand); }
+
+// Conteúdo abre espaço p/ o header fixo (desktop e mobile)
+.main-content { padding-top: 58px; }
 
 // ---------- Mobile (< 1024px) ----------
 @include respond(1023px) {
-  .mobile-topbar { display: flex; }
+  .menu-btn   { display: flex; }
+  .mobile-logo { display: flex; }
+  .header-clock { display: none; }
 
   .sidebar {
     position: fixed;
     top: 0; left: 0;
-    width: 280px;
+    width: 290px;
     height: 100vh;
+    height: 100dvh;
     z-index: var(--z-sidebar);
     transform: translateX(-100%);
     transition: transform .3s var(--ease);
-
     &.show { transform: translateX(0); }
   }
 
   .overlay {
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     z-index: var(--z-overlay);
     background: rgba(0, 0, 0, .55);
-    opacity: 0;
-    visibility: hidden;
+    opacity: 0; visibility: hidden;
     transition: .3s;
-
     &.show { opacity: 1; visibility: visible; }
   }
-
-  .main-content { padding-top: 80px; }
 }
 
-// ---------- Desktop ----------
+// ---------- Desktop (>= 1024px) ----------
 @include respond-min('lg') {
-  .mobile-topbar { display: none; }
+  .menu-btn    { display: none; }
+  .mobile-logo { display: none; }
+  .header-clock { display: inline-flex; }
   .overlay { display: none; }
+
+  // header começa após a sidebar; acompanha o recolher (via :has)
+  .app-header { left: var(--sidebar-w); }
+  body:has(.sidebar.collapsed) .app-header { left: var(--sidebar-w-collapsed); }
 }

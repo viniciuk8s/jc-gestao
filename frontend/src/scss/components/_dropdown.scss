@@ -1,124 +1,105 @@
 // ============================================================
-//  components/_dropdown.scss — perfil + menu suspenso (conta)
-//  origem: dropdown.css
+//  components/_dropdown.scss — perfil no HEADER (canto direito)
+//  Botão compacto; o dropdown abre p/ BAIXO, alinhado à direita.
 // ============================================================
 @use '../abstracts' as *;
 
-// NOTA: só o :hover do .icon-btn vive aqui. A base .icon-btn é o componente.
-.icon-btn:hover {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-.vr {
-  height: 30px;
-  background: var(--border);
-}
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
+.vr { height: 30px; background: var(--border); }
 
 // ---------- Perfil ----------
-.profile-wrap { position: relative; margin-top: 30px; }
+.profile-wrap { position: relative; flex: none; }
 
 .profile-btn {
-  margin-top: 40px;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 20px;
+  padding: 5px 10px 5px 5px;
   border: 1px solid transparent;
-  border-radius: var(--r-md);
+  border-radius: var(--r-full);
+  background: none;
   cursor: pointer;
   user-select: none;
   transition: border-color var(--transition), background var(--transition);
 
+  &:hover { background: var(--surface); border-color: var(--border); }
+  &.active { background: var(--surface-2); border-color: var(--brand-line); }
   &.active .chevron { transform: rotate(180deg); }
 }
 
 .avatar {
-  width: 50px;
-  height: 50px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 100px;
-  border: 1px solid var(--brand-strong);
-  color: var(--brand-strong);
-  font-family: 'Outfit', var(--font-display), sans-serif;
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: .5px;
+  width: 34px; height: 34px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-full);
+  background: var(--brand-soft);
+  border: 1px solid var(--brand-line);
+  color: var(--brand);
+  font-family: var(--font-display);
+  font-weight: 700; font-size: 13px; letter-spacing: .3px;
+  overflow: hidden;
+  img { width: 100%; height: 100%; object-fit: cover; }
 }
 
-.profile-meta { display: flex; flex-direction: column; gap: 1px; }
+.profile-meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; max-width: 160px; }
 .profile-name {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text) !important;
-  line-height: 1;
+  font-size: 13px; font-weight: 600;
+  color: var(--heading) !important;
+  line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .profile-role {
-  padding-top: 5px;
-  font-size: 15px;
-  color: var(--brand-strong);
-  line-height: 1;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .chevron {
-  margin-left: 2px;
-  color: var(--text-muted);
+  margin-left: 2px; flex: none;
+  color: var(--text-dim);
   transition: transform .22s var(--ease);
 }
 
-// ---------- Dropdown (.dropdown utilitário) ----------
-.dropdown {
+// ---------- Dropdown da conta (abre p/ baixo, à direita) ----------
+.dropdown,
+#dropdown {
   position: absolute;
-  margin-left: 320px;
-  max-width: 400px;
+  top: calc(100% + 10px);
+  bottom: auto;
+  right: 0; left: auto;
+  min-width: 240px;
   z-index: var(--z-toast);
   border: 1px solid var(--border-strong);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
   overflow: hidden;
   background: var(--surface-solid);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  backdrop-filter: blur(18px) saturate(135%);
   box-shadow: var(--shadow-lg);
   opacity: 0;
-  transform: translateY(-10px) scale(.97);
+  transform: translateY(-8px) scale(.98);
+  transform-origin: top right;
   pointer-events: none;
   transition: opacity .2s var(--ease), transform .2s var(--ease);
 
   &.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
-
-  @include respond('lg') { margin-top: 0; margin-left: 0; }
 }
 
-.dd-header {
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid var(--border);
-}
 .dd-body { padding: 8px; }
 .dd-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
+  display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 10px;
-  border: none;
-  border-radius: var(--r-sm);
+  border: none; border-radius: var(--r-sm);
   background: none;
   color: var(--text-muted);
-  font-family: 'Outfit', var(--font-body), sans-serif;
-  font-size: 1.05rem;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 14px; font-weight: 500;
+  text-align: left; cursor: pointer;
   transition: background .15s, color .15s;
 
   &:hover { background: var(--surface-2); color: var(--text); }
-  svg { opacity: .75; flex-shrink: 0; }
+  svg { opacity: .8; flex-shrink: 0; }
+  i, .ti, .bi { color: inherit; }
 
   &.logout {
     color: var(--danger);
@@ -127,53 +108,10 @@
 }
 .dd-sep { height: 1px; margin: 6px 0; background: var(--border); }
 
-// Escala mobile (de responsive.css)
-@include respond('md') {
-  .profile-name { font-size: 17px; }
-  .profile-role { font-size: 13px; }
-}
-
-/* ============================================================
-   #dropdown — aparência (vidro) + ancoragem ao botão de perfil.
-   Por #id, vence o posicionamento do app.css se houver divergência.
-   ============================================================ */
-#dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
-  width: auto;
-  min-width: 220px;
-  max-width: 100%;
-  border-radius: 14px;
-  z-index: 70;
-
-  background: rgba(16, 26, 40, .85);
-  -webkit-backdrop-filter: blur(18px) saturate(135%);
-  backdrop-filter: blur(18px) saturate(135%);
-  border: 1px solid rgba(255, 255, 255, .10);
-  box-shadow: 0 22px 54px -16px rgba(0, 0, 0, .6);
-  color: #E8EDF5;
-
-  .dd-header {
-    color: #E8EDF5;
-    border-bottom: 1px solid rgba(255, 255, 255, .08);
-    strong { color: #F6F8FC; }
-    small  { color: #9AA6BC; }
-  }
-
-  .dd-item {
-    color: #D7DEEA;
-    background: transparent;
-    transition: background .15s, color .15s;
-    &:hover { background: rgba(255, 255, 255, .07); color: #fff; }
-    &.logout { color: #FF8A8A; &:hover { background: rgba(255, 122, 122, .12); color: #FFB3B3; } }
-    i, .ti, .bi { color: inherit; }
-  }
-
-  .dd-sep { background: rgba(255, 255, 255, .08); }
-}
-
-@include respond('md') {
-  #dropdown { left: 0; right: 0; min-width: 0; }
+// ---------- Mobile: header apertado -> só avatar ----------
+@include respond(1023px) {
+  .profile-btn { padding: 4px; border-radius: var(--r-full); }
+  .profile-meta { display: none; }
+  .chevron { display: none; }
+  #dropdown, .dropdown { min-width: 220px; }
 }

@@ -29,32 +29,40 @@ $brand: #F97315;
   // gradiente quente da marca — botões, realces e textos de destaque
   --brand-grad:   linear-gradient(120deg, var(--brand-2) 0%, var(--brand) 50%, var(--brand-3) 100%);
 
-  // ---------- Fundo (escuro + gradiente quente) ----------
-  --bg-0: #0C0F17;
-  --bg-1: #080A11;
-  --bg-2: #05070C;
+  // ---------- Fundo (dark SaaS neutro; só um sopro quente no topo) ----------
+  --bg-0: #0E1116;
+  --bg-1: #0A0D12;
+  --bg-2: #07090E;
   --bg-atmosphere:
-    radial-gradient(900px 520px at 12% -8%,  #{brand(.20)}, transparent 60%),
-    radial-gradient(820px 600px at 112% 6%,  #{brand(.12)}, transparent 58%),
-    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 60%, var(--bg-2) 100%);
+    radial-gradient(1100px 620px at 50% -18%, #{brand(.06)}, transparent 62%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 55%, var(--bg-2) 100%);
 
   // ---------- Superfícies (cards de vidro) ----------
-  --surface:       rgba(255, 255, 255, .055);
-  --surface-2:     rgba(255, 255, 255, .085);
-  --surface-3:     rgba(255, 255, 255, .12);
-  --surface-solid: #101A28;            // superfície opaca p/ dropdown/toast legíveis
+  --surface:       rgba(255, 255, 255, .035);
+  --surface-2:     rgba(255, 255, 255, .06);
+  --surface-3:     rgba(255, 255, 255, .10);
+  --surface-solid: #141A22;            // superfície opaca p/ sidebar/dropdown/toast
   --surface-blur:  blur(16px) saturate(130%);
+  --header-bg:     rgba(20, 26, 34, .82);   // fundo do header (vidro)
+
+  // ---------- Modais / overlays (vidro temático) ----------
+  --overlay-bg:     rgba(5, 8, 13, .42);    // escurecimento do fundo (suave)
+  --overlay-blur:   blur(10px) saturate(120%);
+  --modal-bg:       rgba(18, 24, 33, .74);  // card translúcido
+  --modal-border:   rgba(255, 255, 255, .12);
+  --modal-field:    rgba(255, 255, 255, .05);
+  --modal-field-bd: rgba(255, 255, 255, .13);
 
   // ---------- Texto ----------
-  --text:       #E8EDF5;
-  --heading:    #F6F8FC;
-  --text-muted: #9AA6BC;
-  --text-dim:   #6E7A91;
+  --text:       #E7EBF2;
+  --heading:    #F7F9FC;
+  --text-muted: #97A1B2;
+  --text-dim:   #5E6878;
 
   // ---------- Bordas / linhas ----------
-  --border:        rgba(255, 255, 255, .10);
-  --border-strong: rgba(255, 255, 255, .16);
-  --line:          rgba(255, 255, 255, .08);
+  --border:        rgba(255, 255, 255, .08);
+  --border-strong: rgba(255, 255, 255, .14);
+  --line:          rgba(255, 255, 255, .06);
 
   // ---------- Status ----------
   --success: #34D399; --success-soft: rgba(52, 211, 153, .14);
@@ -62,10 +70,10 @@ $brand: #F97315;
   --warning: #FBBF24; --warning-soft: rgba(251, 191, 36, .14);
 
   // ---------- Raios ----------
-  --r-sm:   5px;
-  --r-md:   10px;
-  --r-lg:   5px;
-  --r-xl:   24px;
+  --r-sm:   8px;
+  --r-md:   11px;
+  --r-lg:   14px;
+  --r-xl:   20px;
   --r-full: 9999px;
 
   // ---------- Sombras ----------
@@ -75,9 +83,9 @@ $brand: #F97315;
   --shadow-glow: 0 16px 44px -12px var(--brand-glow);
 
   // ---------- Tipografia ----------
-  --font-display: 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-body:    'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-data:    'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-data:    'Inter', system-ui, -apple-system, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
   // ---------- Layout ----------
@@ -103,6 +111,75 @@ $brand: #F97315;
   --secondary:      var(--text-dim);
   --border-card:    var(--border);
   --border-radius:  var(--r-md);
+
+  color-scheme: dark;
+}
+
+// ============================================================
+//  TEMA CLARO — overrides ativados por <html data-theme="light">
+//  Mantém o laranja da marca; inverte fundos/superfícies/texto.
+// ============================================================
+html[data-theme="light"] {
+  // Marca -> AZUL ROYAL no tema claro (sobrescreve o laranja)
+  --brand:        #3B5BDB;
+  --brand-strong: #324FC7;
+  --brand-dark:   #2941A8;
+  --brand-2:      #5B79F0;
+  --brand-3:      #2F4ACB;
+  --brand-amber:  #6E8BFF;
+  --brand-soft:   rgba(59, 91, 219, .12);
+  --brand-softer: rgba(59, 91, 219, .06);
+  --brand-line:   rgba(59, 91, 219, .40);
+  --brand-glow:   rgba(59, 91, 219, .42);
+  --brand-grad:   linear-gradient(120deg, var(--brand-2) 0%, var(--brand) 50%, var(--brand-3) 100%);
+
+  // Fundo mais claro (quase branco), com leve respiro azul no topo
+  --bg-0: #FCFDFF;
+  --bg-1: #F6F8FC;
+  --bg-2: #EEF2F9;
+  --bg-atmosphere:
+    radial-gradient(1100px 620px at 50% -18%, rgba(59, 91, 219, .06), transparent 62%),
+    linear-gradient(180deg, #FCFDFF 0%, #F6F8FC 55%, #EEF2F9 100%);
+
+  // Superfícies (tinta escura sobre claro)
+  --surface:       rgba(17, 24, 39, .035);
+  --surface-2:     rgba(17, 24, 39, .06);
+  --surface-3:     rgba(17, 24, 39, .10);
+  --surface-solid: #FFFFFF;
+
+  // Texto
+  --text:       #2B3445;
+  --heading:    #10141C;
+  --text-muted: #5B657A;
+  --text-dim:   #8A94A6;
+
+  // Bordas / linhas
+  --border:        rgba(17, 24, 39, .12);
+  --border-strong: rgba(17, 24, 39, .20);
+  --line:          rgba(17, 24, 39, .08);
+
+  // Status (um pouco mais escuros p/ contraste no claro)
+  --success: #0E9F6E; --success-soft: rgba(14, 159, 110, .14);
+  --danger:  #E5484D; --danger-soft:  rgba(229, 72, 77, .12);
+  --warning: #D98A08; --warning-soft: rgba(217, 138, 8, .16);
+
+  // Sombras (suaves, base clara)
+  --shadow-sm:   0 1px 2px rgba(16, 24, 40, .08);
+  --shadow-md:   0 12px 30px -14px rgba(16, 24, 40, .18);
+  --shadow-lg:   0 28px 64px -22px rgba(16, 24, 40, .22);
+
+  // Header (vidro claro)
+  --header-bg: rgba(255, 255, 255, .85);
+
+  // Modais / overlays (claro)
+  --overlay-bg:     rgba(20, 26, 38, .26);
+  --overlay-blur:   blur(10px) saturate(120%);
+  --modal-bg:       rgba(255, 255, 255, .74);
+  --modal-border:   rgba(17, 24, 39, .12);
+  --modal-field:    rgba(17, 24, 39, .04);
+  --modal-field-bd: rgba(17, 24, 39, .14);
+
+  color-scheme: light;
 }
 
 // Fundo aplicado ao corpo (fixo, com cor sólida de fallback).

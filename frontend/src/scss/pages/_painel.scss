@@ -81,7 +81,7 @@
   text-transform: uppercase;
   color: var(--text-dim);
 }
-.panel-body { padding: 20px; flex: 1; }
+.panel-body { padding: 14px 16px; flex: 1; }
 
 // ---------- Gráfico de barras (CSS puro) ----------
 .bars { display: flex; align-items: flex-end; gap: 12px; height: 210px; }
@@ -197,4 +197,94 @@
   .dash-actions { width: 100%; }
   .dash-actions .btn-solid,
   .dash-actions .btn-ghost { flex: 1; justify-content: center; }
+}
+/* ============================================================
+   Gráfico de LUCRO mensal — barras ancoradas embaixo (coladas
+   nos meses). Positivo = acento (laranja/azul); negativo = vermelho.
+   Badge de % no mês atual. Seção totalmente responsiva.
+   ============================================================ */
+.profit-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 240px;
+  padding-top: 26px;            /* espaço p/ o badge do mês atual */
+}
+.pf-col {
+  position: relative;
+  flex: 1; min-width: 0;
+  height: 100%;
+  display: flex; flex-direction: column; align-items: center;
+}
+.pf-col.future { opacity: .5; }
+
+.pf-plot {
+  position: relative;
+  width: 100%; flex: 1;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.pf-bar {
+  width: 80%; max-width: 46px; min-height: 4px;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, var(--brand-amber), var(--brand));
+  transition: height .5s var(--ease);
+}
+.pf-bar.neg { background: linear-gradient(180deg, rgba(255, 122, 122, .65), var(--danger)); }
+.pf-col.peak .pf-bar { box-shadow: 0 8px 22px -6px var(--brand-glow); }
+
+.pf-label {
+  margin-top: 8px;
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+}
+.pf-col.peak .pf-label { color: var(--heading); font-weight: 700; }
+
+/* tooltip do valor (hover) */
+.pf-bar::after {
+  content: attr(data-val);
+  position: absolute; left: 50%; bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 10px; font-weight: 700; color: var(--heading);
+  background: var(--surface-solid);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 2px 6px; box-shadow: var(--shadow-sm);
+  opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 5;
+}
+.pf-col:hover .pf-bar::after { opacity: 1; }
+
+/* badge de % do mês atual (vs mês anterior) */
+.pf-badge {
+  position: absolute; top: 0; left: 50%;
+  transform: translate(-50%, -100%);
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; font-weight: 800; line-height: 1;
+  padding: 4px 8px; border-radius: var(--r-full);
+  white-space: nowrap; z-index: 6;
+
+  i { font-size: 11px; padding: 0; }
+  &.up   { color: var(--success); background: var(--success-soft); }
+  &.down { color: var(--danger);  background: var(--danger-soft); }
+  &.flat { color: var(--text-dim); background: var(--surface); }
+}
+
+/* ============================================================
+   Responsividade da seção do painel
+   ============================================================ */
+@include respond('lg') {
+  .panel-grid { grid-template-columns: 1fr; }
+  .stat-row   { grid-template-columns: repeat(2, 1fr); }
+}
+@include respond('md') {
+  .dash-welcome { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .dash-actions { width: 100%; }
+  .quick        { grid-template-columns: 1fr; }
+  .profit-chart { height: 210px; gap: 6px; padding-top: 24px; }
+  .pf-bar       { width: 86%; }
+  .pf-label     { font-size: 10px; }
+}
+@include respond('sm') {
+  .stat-row     { grid-template-columns: 1fr; }
+  .profit-chart { height: 196px; gap: 4px; }
+  .pf-label     { font-size: 9px; }
+  .pf-badge     { font-size: 10px; padding: 3px 6px; }
 }

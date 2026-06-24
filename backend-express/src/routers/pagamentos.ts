@@ -31,12 +31,16 @@ r.get("/", async (req, res) => {
   const conds: SQL[] = [];
   if (q.funcionario_id) conds.push(eq(pagamentos.funcionarioId, q.funcionario_id));
   if (q.competencia) conds.push(eq(pagamentos.competencia, q.competencia));
-  const rows = await db
+  const base = db
     .select({ p: pagamentos, nome: funcionarios.nome })
     .from(pagamentos)
     .leftJoin(funcionarios, eq(pagamentos.funcionarioId, funcionarios.id))
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(desc(pagamentos.data), desc(pagamentos.id));
+  let qb = base.$dynamic();
+  if (q.limit !== undefined) qb = qb.limit(q.limit);
+  if (q.offset !== undefined) qb = qb.offset(q.offset);
+  const rows = await qb;
   res.json(rows.map((row) => out(row.p, row.nome)));
 });
 

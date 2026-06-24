@@ -19,10 +19,14 @@ r.get("/", async (req, res) => {
   const conds: SQL[] = [];
   if (q.setor && q.setor !== "todos") conds.push(eq(funcionarios.setor, q.setor));
   if (q.status && q.status !== "todos") conds.push(eq(funcionarios.status, q.status));
-  const rows = await db
+  const base = db
     .select().from(funcionarios)
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(funcionarios.nome);
+  let qb = base.$dynamic();
+  if (q.limit !== undefined) qb = qb.limit(q.limit);
+  if (q.offset !== undefined) qb = qb.offset(q.offset);
+  const rows = await qb;
   res.json(rows.map(out));
 });
 

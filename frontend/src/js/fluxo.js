@@ -14,6 +14,7 @@
   var gv = JC.val, setVal = JC.setVal, set = JC.setText;
 
   var SALDO_INICIAL = 0; // saldo de abertura do caixa (ajuste aqui se houver)
+  function c2(n) { return Math.round((Number(n) || 0) * 100) / 100; } // evita drift de float
 
   var state = {
     movs: [],
@@ -57,7 +58,7 @@
     var map = {};
     sorted.forEach(function (m) {
       if (m.status === 'pago') {
-        run += (m.tipo === 'entrada' ? m.valor : -m.valor);
+        run = c2(run + (m.tipo === 'entrada' ? m.valor : -m.valor));
         map[m.id] = run;
       } else {
         map[m.id] = null; // ainda não impactou o caixa
@@ -104,7 +105,8 @@
         if (m.tipo === 'entrada') ent += m.valor; else sai += m.valor;
       }
     });
-    var res = ent - sai;
+    ent = c2(ent); sai = c2(sai);
+    var res = c2(ent - sai);
     set('cf-sum-in', fmt(ent));
     set('cf-sum-out', fmt(sai));
     var resEl = document.getElementById('cf-sum-net');

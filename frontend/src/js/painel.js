@@ -59,25 +59,83 @@
     setSub('areceber', d.a_receber.legenda || '');
     setTrend('areceber', null);
 
-    montarGrafico(d.receita_series || []);
     montarProximos(d.proximos_servicos || []);
   }
 
-  function montarGrafico(serie) {
+  // Lucro mensal do ANO corrente = entradas - saídas PAGAS por mês (lucro realizado).
+  // Gráfico com linha-base no zero (lucro pode ser negativo); badge de % do
+  // mês atual vs o mês anterior. Comparação entre meses é visual (altura das barras).
+  async function montarLucroAno() {
     var box = document.getElementById('receita-bars');
     if (!box) return;
-    if (!serie.length) { box.innerHTML = ''; return; }
-    var max = Math.max.apply(null, serie.map(function (p) { return Number(p.valor) || 0; }));
-    if (max <= 0) max = 1;
-    var ultimo = serie.length - 1;
-    box.innerHTML = serie.map(function (p, i) {
-      var v = Number(p.valor) || 0;
-      var h = Math.max(6, Math.round((v / max) * 100)); // piso de 6% para a barra ficar visível
-      var peak = (i === ultimo) ? ' peak' : '';
-      var val = 'R$ ' + (v / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-      return '<div class="bar-col' + peak + '"><div class="bar-track">' +
-             '<div class="bar" data-val="' + val + '" style="height:' + h + '%"></div></div>' +
-             '<span class="bar-label">' + esc(cap(p.mes || '')) + '</span></div>';
+    var ano = new Date().getFullYear();
+    var curMes = new Date().getMonth(); // 0..11
+    var ent = [0,0,0,0,0,0,0,0,0,0,0,0];
+    var sai = [0,0,0,0,0,0,0,0,0,0,0,0];
+    try {
+      var lista = await window.JC.api.lancamentos.list();
+      (lista || []).forEach(function (m) {
+        if (!m) return;
+        if (m.status !== 'pago') return;               // só realizado (igual ao dashboard e ao relatório financeiro)
+        var d = String(m.data || '');                 // AAAA-MM-DD
+        if (d.slice(0, 4) !== String(ano)) return;     // só o ano corrente
+        var mi = parseInt(d.slice(5, 7), 10) - 1;
+        if (mi < 0 || mi > 11) return;
+        var v = Number(m.valor) || 0;
+        if (m.tipo === 'entrada') ent[mi] += v;
+        else if (m.tipo === 'saida') sai[mi] += v;
+      });
+    } catch (e) {
+      console.error('Falha ao carregar o lucro do ano:', e);
+      box.innerHTML = '<p class="sched-empty">Não foi possível carregar os dados.</p>';
+      return;
+    }
+
+    var c2 = function (n) { return Math.round((Number(n) || 0) * 100) / 100; };
+    var lucro = ent.map(function (e, i) { return c2(e - sai[i]); });
+    var totalAno = c2(lucro.reduce(function (a, b) { return a + b; }, 0));
+
+    // escala pela maior magnitude (positiva ou negativa)
+    var maxMag = 1;
+    lucro.forEach(function (v) { var a = Math.abs(v); if (a > maxMag) maxMag = a; });
+
+    // legenda do painel: lucro acumulado do ano
+    var panel = box.closest('.panel');
+    var meta = panel ? panel.querySelector('.panel-meta') : null;
+    if (meta) meta.textContent = 'Ano ' + ano + ' · lucro ' + moeda(totalAno);
+
+    function pctBadge(i) {
+      // só o mês atual exibe o badge, comparando com o mês anterior
+      if (i !== curMes || i === 0) return '';
+      var prev = lucro[i - 1], cur = lucro[i];
+      var cls, txt, ic;
+      if (prev === 0 && cur === 0) { cls = 'flat'; txt = '0%'; ic = ''; }
+      else if (prev === 0) { cls = cur > 0 ? 'up' : 'down'; txt = 'novo'; ic = cur > 0 ? 'up' : 'down'; }
+      else {
+        var pct = Math.round((cur - prev) / Math.abs(prev) * 100);
+        cls = pct > 0 ? 'up' : (pct < 0 ? 'down' : 'flat');
+        txt = (pct > 0 ? '+' : (pct < 0 ? '−' : '')) + Math.abs(pct) + '%';
+        ic = pct > 0 ? 'up' : (pct < 0 ? 'down' : '');
+      }
+      var icon = ic === 'up' ? '<i class="bi bi-arrow-up-right" aria-hidden="true"></i> '
+               : ic === 'down' ? '<i class="bi bi-arrow-down-right" aria-hidden="true"></i> ' : '';
+      return '<span class="pf-badge ' + cls + '" title="vs. ' + MES[i - 1] + '">' + icon + txt + '</span>';
+    }
+
+    box.innerHTML = lucro.map(function (v, i) {
+      var futuro = i > curMes;
+      var mag = Math.abs(v);
+      var h = (!futuro && v !== 0) ? Math.max(6, Math.round(mag / maxMag * 100)) : 0; // % da altura do plot
+      var sign = v > 0 ? 'pos' : (v < 0 ? 'neg' : 'zero');
+      var peak = (i === curMes) ? ' peak' : (futuro ? ' future' : '');
+      var bar = (!futuro && v !== 0)
+        ? '<div class="pf-bar ' + sign + '" data-val="' + moeda(v) + '" style="height:' + h + '%"></div>'
+        : '';
+      return '<div class="pf-col' + peak + '">' +
+               pctBadge(i) +
+               '<div class="pf-plot">' + bar + '</div>' +
+               '<span class="pf-label">' + MES[i] + '</span>' +
+             '</div>';
     }).join('');
   }
 
@@ -110,6 +168,7 @@
       console.error('Falha ao carregar o painel:', e);
       ['receita', 'servicos', 'projetos', 'areceber'].forEach(function (k) { setVal(k, '—'); });
     }
+    montarLucroAno(); // lucro mensal do ano = dados reais de /api/lancamentos
   }
 
   init();

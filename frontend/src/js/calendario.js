@@ -45,6 +45,23 @@
     cancelado:  { label: 'Cancelado',  cls: 'cancelado' },
   };
 
+  // ============================================================
+  //  TIPOS DE SERVIÇO — lista fixa. Edite à vontade: adicione,
+  //  remova ou renomeie itens aqui que o select do modal atualiza.
+  // ============================================================
+  const TIPOS_SERVICO = [
+    'Instalação de painel solar',
+    'Manutenção de sistema solar',
+    'Instalação elétrica',
+    'Manutenção elétrica',
+    'Vistoria / inspeção técnica',
+    'Projeto elétrico',
+    'Troca de quadro / disjuntores',
+    'Aterramento / SPDA (para-raios)',
+    'Reparo emergencial',
+    'Orçamento / visita técnica',
+  ];
+
   /* ---------- Seletores de mês/ano ---------- */
   function populateSelectors() {
     const selM = document.getElementById('sel-month');
@@ -191,8 +208,8 @@
   }
 
   function membrosAvatares(membros) {
-    if (!membros || !membros.length) return '';
-    const max = 5;
+    if (!membros || !membros.length) return '<span class="svc-team-empty">—</span>';
+    const max = 4;
     let html = membros.slice(0, max).map((m) => {
       const foto = state.empFoto[m.nome];
       if (foto) {
@@ -201,7 +218,7 @@
       return `<span class="svc-av" style="background:${colorFor(m.nome)}" title="${escHtml(m.nome)}">${escHtml(initials(m.nome))}</span>`;
     }).join('');
     if (membros.length > max) html += `<span class="svc-av more" title="mais ${membros.length - max}">+${membros.length - max}</span>`;
-    return `<div class="svc-membros">${html}</div>`;
+    return `<div class="svc-team">${html}</div>`;
   }
 
   /* ---------- Renderizar tabela ---------- */
@@ -238,7 +255,7 @@
     if (allEvents.length === 0) {
       tbody.innerHTML = `
         <tr class="empty-row" id="empty-row">
-          <td colspan="7">
+          <td colspan="8">
             <div class="empty-state">
               <div class="empty-icon"><i class="bi bi-calendar2-week"></i></div>
               <p>Nenhum serviço agendado ainda.<br>Clique em um dia no calendário para começar.</p>
@@ -265,11 +282,12 @@
 
       tr.innerHTML = `
         <td><div class="svc-date">${dd}/${mm}<span class="wd">${weekday}</span></div></td>
-        <td class="svc-name">${escHtml(servico)}${membrosAvatares(membros)}</td>
-        <td>${escHtml(cliente)}</td>
-        <td>${horario || '—'}</td>
+        <td class="svc-name">${escHtml(servico)}</td>
+        <td class="svc-client"><i class="bi bi-person"></i><span>${escHtml(cliente)}</span></td>
+        <td class="svc-time"><i class="bi bi-clock"></i><span>${horario || '—'}</span></td>
         <td class="num ${valorClass}">${valorFormatted}</td>
         <td><span class="status-badge ${st.cls}">${st.label}</span></td>
+        <td class="svc-team-cell">${membrosAvatares(membros)}</td>
         <td class="num svc-actions">
           <button class="btn-edit" data-id="${id}" aria-label="Editar"><i class="bi bi-pencil"></i></button>
           <button class="btn-delete" data-id="${id}" aria-label="Remover"><i class="bi bi-trash3"></i></button>
@@ -314,13 +332,23 @@
     const emps = state.emps || [];
     const membrosSel = (existente && existente.membros ? existente.membros : []).map((m) => m.nome);
 
+    // Opções de tipo de serviço (lista fixa). Se o agendamento já tem um
+    // serviço fora da lista (dado antigo), injeta para não perder ao editar.
+    let servicoOpts = TIPOS_SERVICO.slice();
+    if (existente && existente.servico && servicoOpts.indexOf(existente.servico) === -1) {
+      servicoOpts.unshift(existente.servico);
+    }
+    const servicoSelectOpts = [{ value: '', label: 'Selecione o tipo de serviço…' }]
+      .concat(servicoOpts.map((s) => ({ value: s, label: s })));
+
     JC.modal.open({
       title: editId ? 'Editar agendamento' : 'Novo agendamento',
       subtitle: subtitle,
       submitText: editId ? 'Salvar alterações' : 'Salvar agendamento',
       maxWidth: '560px',
       fields: [
-        { id: 'servico', label: 'Serviço', type: 'text', required: true, value: existente ? existente.servico || '' : '', placeholder: 'Ex.: Instalação de painel solar' },
+        { id: 'servico', label: 'Tipo de serviço', type: 'select', required: true,
+          options: servicoSelectOpts, value: existente ? existente.servico || '' : '' },
         { id: 'cliente', label: 'Cliente', type: 'text', required: true, value: existente ? existente.cliente || '' : '', placeholder: 'Nome do cliente' },
         { id: 'horario', label: 'Horário', type: 'time', required: true, half: true, value: existente ? existente.horario || '' : '' },
         { id: 'valor', label: 'Valor (R$)', type: 'number', step: '0.01', min: '0', inputmode: 'decimal', half: true,
@@ -345,10 +373,12 @@
           }
         }
         const v = parseFloat(String(vals.valor).replace(',', '.'));
+        const servico = String(vals.servico || '').trim();
+        if (!servico) throw new Error('Selecione o tipo de serviço.');
         const membros = (vals.colaboradores || []).map((n) => ({ nome: n, tipo: 'funcionario' }));
         const body = {
           data: key,
-          servico: String(vals.servico).trim(),
+          servico: servico,
           cliente: String(vals.cliente).trim(),
           horario: vals.horario,
           status: status,

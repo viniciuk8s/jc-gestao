@@ -1,0 +1,224 @@
+/* ===========================================================
+   agenda.css — estilos + responsividade da pagina de Agendamentos
+   Carregar DEPOIS de app.css. Substitui o antigo <style> inline.
+   =========================================================== */
+
+/* NÃO sobrescrever 'margin' (preserva o offset da sidebar do app.css) nem zerar o padding-top do header */
+body[data-page="agenda"] .main-content { max-width: calc(var(--sidebar-w) + 1200px); padding: 80px clamp(16px, 4vw, 36px) 64px; box-sizing: border-box; display: flex; flex-direction: column; gap: 32px; }
+
+/* ---- Cabecalho apresentativo ---- */
+body[data-page="agenda"] .cal-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+body[data-page="agenda"] .cal-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--brand, #F97315); margin-bottom: 6px; }
+body[data-page="agenda"] .cal-title { margin: 0; font-family: 'Syne','Sora',system-ui,sans-serif; font-size: 30px; line-height: 1.05; font-weight: 800; letter-spacing: -.01em; color: var(--heading, #F6F8FC); }
+body[data-page="agenda"] .services-title { font-family: 'Syne','Sora',system-ui,sans-serif; font-size: 20px; font-weight: 700; margin: 0; color: var(--heading, #F6F8FC); }
+
+/* ---- Navegacao de mes ---- */
+body[data-page="agenda"] .cal-nav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+body[data-page="agenda"] .cal-stepper { display: flex; align-items: center; gap: 6px; }
+body[data-page="agenda"] .cal-today,
+body[data-page="agenda"] .nav-btn,
+body[data-page="agenda"] .cal-select {
+  height: 38px; border: 1px solid var(--line, rgba(255,255,255,.14)); border-radius: 8px;
+  background: rgba(255,255,255,.05); color: var(--text, #E8EDF5); font-size: 13.5px; font-family: inherit; cursor: pointer; padding: 0 12px;
+}
+body[data-page="agenda"] .nav-btn { width: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+body[data-page="agenda"] .cal-select { -webkit-appearance: none; appearance: none; padding-right: 28px; }
+body[data-page="agenda"] .cal-today:hover,
+body[data-page="agenda"] .nav-btn:hover { border-color: var(--brand, #F97315); color: var(--brand, #F97315); }
+
+/* ---- Calendario estilo Calendly (dias circulares, temático) ---- */
+body[data-page="agenda"] .calendar-section { margin-bottom: 30px; }
+body[data-page="agenda"] .calendar-wrapper { width: 100%; box-sizing: border-box; background: var(--surface, rgba(255,255,255,.03)); border: 1px solid var(--line, rgba(255,255,255,.08)); border-radius: 16px; padding: 14px 10px; }
+body[data-page="agenda"] .weekdays-header,
+body[data-page="agenda"] .days-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+body[data-page="agenda"] .weekdays-header { margin-bottom: 8px; }
+body[data-page="agenda"] .weekdays-header span { text-align: center; font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: lowercase; color: var(--text-dim, #6E7A91); }
+body[data-page="agenda"] .day-cell { min-width: 0; display: flex; align-items: center; justify-content: center; padding: 2px 0; }
+body[data-page="agenda"] .day-btn {
+  position: relative; width: 100%; max-width: 42px; aspect-ratio: 1 / 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 50%; background: transparent;
+  color: var(--text, #E8EDF5); font-family: inherit; font-size: clamp(12px, 3.4vw, 15px); font-weight: 600;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+body[data-page="agenda"] .day-btn:hover { background: var(--brand-soft, rgba(249,115,21,.12)); color: var(--brand, #F97315); }
+body[data-page="agenda"] .day-cell.empty .day-btn { visibility: hidden; cursor: default; }
+body[data-page="agenda"] .day-btn .dnum { line-height: 1; }
+body[data-page="agenda"] .day-btn.has-event { background: var(--brand-soft, rgba(249,115,21,.12)); color: var(--brand, #F97315); font-weight: 700; }
+body[data-page="agenda"] .day-btn.today { background: var(--brand, #F97315); color: #fff; font-weight: 800; }
+body[data-page="agenda"] .day-btn.today:hover { background: var(--brand, #F97315); color: #fff; }
+body[data-page="agenda"] .day-events { position: absolute; left: 0; right: 0; bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 3px; }
+body[data-page="agenda"] .day-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+body[data-page="agenda"] .day-more { font-size: 8px; font-weight: 800; line-height: 1; color: currentColor; }
+
+/* ---- Tabela de serviços (refatorada) ---- */
+body[data-page="agenda"] .services-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+body[data-page="agenda"] .services-count { padding: 3px 11px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--brand, #F97315); background: rgba(249,115,21,.14); }
+body[data-page="agenda"] .services-meta { display: flex; align-items: center; gap: 10px; }
+body[data-page="agenda"] .services-total { font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 700; color: var(--text, #E8EDF5); }
+body[data-page="agenda"] .table-wrapper { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+body[data-page="agenda"] .services-table { width: 100%; min-width: 640px; border-collapse: collapse; }
+body[data-page="agenda"] .services-table thead tr { background: rgba(255,255,255,.04); border-bottom: 1px solid rgba(255,255,255,.08); }
+body[data-page="agenda"] .services-table th { padding: 13px 18px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim, #6E7A91); text-align: left; white-space: nowrap; }
+body[data-page="agenda"] .services-table td { padding: 15px 18px; font-size: 14px; color: var(--text, #E8EDF5); border-bottom: 1px solid rgba(255,255,255,.06); vertical-align: middle; white-space: nowrap; }
+body[data-page="agenda"] .services-table tbody tr:last-child td { border-bottom: none; }
+body[data-page="agenda"] .services-table .num, body[data-page="agenda"] .services-table th.num { text-align: right; }
+body[data-page="agenda"] .svc-row { cursor: pointer; transition: background .14s; }
+body[data-page="agenda"] .svc-row:hover { background: rgba(249,115,21,.06); }
+
+body[data-page="agenda"] .svc-date { font-weight: 700; font-size: 14px; color: var(--text, #E8EDF5); }
+body[data-page="agenda"] .svc-date .wd { display: block; margin-top: 2px; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; color: var(--text-dim, #6E7A91); }
+
+/* NOME DO SERVIÇO em destaque */
+body[data-page="agenda"] .svc-name { font-family: 'Syne','Sora',system-ui,sans-serif; font-weight: 700; font-size: 16px; letter-spacing: -.01em; color: var(--heading, #F6F8FC); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; display: block; }
+
+/* CLIENTE / HORÁRIO — ícone + texto numa linha só */
+body[data-page="agenda"] .svc-client, body[data-page="agenda"] .svc-time { color: var(--text-muted, #9AA6BC); }
+body[data-page="agenda"] .svc-client { display: inline-flex; align-items: center; gap: 7px; min-width: 0; max-width: 100%; }
+body[data-page="agenda"] .svc-client i, body[data-page="agenda"] .svc-time i { font-size: 14px; color: var(--text-dim, #6E7A91); padding: 0; flex: none; }
+body[data-page="agenda"] .svc-client span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; min-width: 0; display: block; }
+body[data-page="agenda"] .svc-time { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+/* BOTÕES de ação (editar / remover) */
+body[data-page="agenda"] .svc-actions .btn-edit, body[data-page="agenda"] .svc-actions .btn-delete { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border, rgba(255,255,255,.08)); border-radius: 9px; background: var(--surface, rgba(255,255,255,.04)); color: var(--text-muted, #9AA6BC); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+body[data-page="agenda"] .svc-actions .btn-edit i, body[data-page="agenda"] .svc-actions .btn-delete i { padding: 0; color: inherit; font-size: 14px; }
+body[data-page="agenda"] .svc-actions .btn-edit:hover { border-color: var(--brand-line, rgba(249,115,21,.4)); color: var(--brand, #F97315); }
+body[data-page="agenda"] .svc-actions .btn-delete:hover { background: rgba(255,122,122,.14); color: #FF7A7A; border-color: rgba(255,122,122,.3); }
+
+body[data-page="agenda"] .value-cell { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--brand, #F97315); }
+body[data-page="agenda"] .value-cell.zero { color: var(--text-dim, #6E7A91); font-weight: 500; }
+
+body[data-page="agenda"] .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 8px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+body[data-page="agenda"] .status-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+body[data-page="agenda"] .status-badge.confirmado { background: rgba(52,211,153,.14); color: #34D399; }
+body[data-page="agenda"] .status-badge.pendente   { background: rgba(251,191,36,.14); color: #FBBF24; }
+body[data-page="agenda"] .status-badge.cancelado  { background: rgba(255,122,122,.14); color: #FF7A7A; }
+body[data-page="agenda"] .status-badge.concluido  { background: rgba(96,165,250,.16); color: #7FB2FF; }
+
+/* EQUIPE — somente fotos circulares, levemente sobrepostas */
+body[data-page="agenda"] .svc-team-cell { white-space: nowrap; }
+body[data-page="agenda"] .svc-team { display: inline-flex; align-items: center; }
+body[data-page="agenda"] .svc-av {
+  width: 30px; height: 30px; border-radius: 50%; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #fff; line-height: 1;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  border: 2px solid var(--bg-0, #0C0F17); box-shadow: 0 0 0 1px rgba(255,255,255,.10);
+  margin-left: -10px; transition: transform .12s ease;
+}
+body[data-page="agenda"] .svc-av:first-child { margin-left: 0; }
+body[data-page="agenda"] .svc-av:hover { transform: translateY(-3px) scale(1.1); z-index: 5; position: relative; }
+body[data-page="agenda"] .svc-av.more { background: #475569; }
+body[data-page="agenda"] .svc-team-empty { color: var(--text-dim, #6E7A91); }
+
+body[data-page="agenda"] .svc-actions { white-space: nowrap; }
+body[data-page="agenda"] .btn-edit, body[data-page="agenda"] .btn-delete {
+  width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+  padding: 0; border: 1px solid transparent; border-radius: 8px; background: none;
+  color: var(--text-dim, #9AA6BC); font-size: 15px; cursor: pointer; transition: background .15s, color .15s;
+}
+body[data-page="agenda"] .btn-edit:hover { color: var(--brand, #F97315); background: rgba(249,115,21,.12); }
+body[data-page="agenda"] .btn-delete:hover { color: #FF7A7A; background: rgba(255,122,122,.12); }
+
+body[data-page="agenda"] .empty-row td { text-align: center; padding: 48px 20px; }
+
+/* mantem o modal HTML antigo escondido (agora usamos o JC.modal) */
+body[data-page="agenda"] #modal-overlay { display: none; }
+
+/* ---- Responsivo ---- */
+/* ---- Serviços: vira cards já no tablet / conteúdo estreito ---- */
+body[data-page="agenda"] .services-section { min-width: 0; }
+body[data-page="agenda"] .table-wrapper { max-width: 100%; }
+@media (max-width: 900px) {
+  /* o wrapper deixa de ser "moldura de tabela" e vira uma lista de cards */
+  body[data-page="agenda"] .table-wrapper { background: transparent; border: 0; box-shadow: none; overflow: visible; border-radius: 0; }
+  body[data-page="agenda"] .services-table { min-width: 0; display: block; width: 100%; }
+  body[data-page="agenda"] .services-table thead { display: none; }
+  body[data-page="agenda"] .services-table tbody { display: block; }
+  body[data-page="agenda"] .services-table tr.empty-row { display: block; }
+  body[data-page="agenda"] .services-table tr.empty-row td { display: block; text-align: center; padding: 40px 16px; white-space: normal; }
+
+  /* cada serviço = um CARD com barra de acento à esquerda */
+  body[data-page="agenda"] .services-table tbody tr:not(.empty-row) {
+    position: relative; display: grid; grid-template-columns: 1fr auto; align-items: center;
+    gap: 11px 12px; padding: 15px 16px 15px 20px; margin-bottom: 12px;
+    background: var(--surface, rgba(255,255,255,.04)); border: 1px solid var(--line, rgba(255,255,255,.08));
+    border-radius: 16px; box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,.4)); overflow: hidden;
+  }
+  body[data-page="agenda"] .services-table tbody tr:not(.empty-row)::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--brand, #F97315);
+  }
+  body[data-page="agenda"] .services-table tbody tr:not(.empty-row):hover { background: var(--surface, rgba(255,255,255,.04)); }
+  body[data-page="agenda"] .services-table td { padding: 0; border: 0; min-width: 0; white-space: nowrap; }
+
+  /* (2) NOME do serviço — destaque, 1 linha com reticências */
+  body[data-page="agenda"] .services-table td.svc-name { grid-column: 1; grid-row: 1; font-size: 16px; max-width: 100%; }
+  /* (1) DATA — chip arredondado à direita */
+  body[data-page="agenda"] .services-table td:nth-child(1) { grid-column: 2; grid-row: 1; justify-self: end; }
+  body[data-page="agenda"] td:nth-child(1) .svc-date {
+    display: inline-flex; align-items: baseline; gap: 5px; padding: 4px 11px; border-radius: 999px;
+    background: var(--brand-soft, rgba(249,115,21,.14)); color: var(--brand, #F97315); font-size: 12px; font-weight: 800;
+  }
+  body[data-page="agenda"] td:nth-child(1) .svc-date .wd {
+    display: inline; margin: 0; font-size: 10px; font-weight: 700; color: var(--brand, #F97315); opacity: .8;
+  }
+  /* (3) CLIENTE — ícone + nome, 1 linha */
+  body[data-page="agenda"] .services-table td.svc-client { grid-column: 1; grid-row: 2; font-size: 13.5px; }
+  /* (4) HORÁRIO — ícone + hora, à direita */
+  body[data-page="agenda"] .services-table td.svc-time { grid-column: 2; grid-row: 2; justify-self: end; font-size: 13px; }
+  /* (6) STATUS — pill à esquerda */
+  body[data-page="agenda"] .services-table td:nth-child(6) { grid-column: 1; grid-row: 3; }
+  /* (5) VALOR — destaque à direita */
+  body[data-page="agenda"] .services-table td.value-cell { grid-column: 2; grid-row: 3; justify-self: end; text-align: right; font-size: 16px; font-weight: 800; }
+  /* (7) EQUIPE — avatares à esquerda / (8) AÇÕES — à direita, com leve separação */
+  body[data-page="agenda"] .services-table td.svc-team-cell { grid-column: 1; grid-row: 4; margin-top: 3px; }
+  body[data-page="agenda"] .services-table td.svc-actions { grid-column: 2; grid-row: 4; justify-self: end; display: inline-flex; gap: 6px; margin-top: 3px; }
+}
+
+@media (max-width: 640px) {
+  body[data-page="agenda"] .main-content { padding: 16px; }
+  body[data-page="agenda"] .cal-head { margin-bottom: 16px; }
+  body[data-page="agenda"] .cal-title { font-size: 23px; }
+  body[data-page="agenda"] .cal-nav { width: 100%; flex-direction: column; align-items: stretch; }
+  body[data-page="agenda"] .cal-today { width: 100%; }
+  body[data-page="agenda"] .cal-stepper { width: 100%; }
+  body[data-page="agenda"] .cal-select.cal-year { flex: 0 0 auto; }
+  body[data-page="agenda"] .cal-select { flex: 1; min-width: 0; }
+
+  /* calendário compacto */
+  body[data-page="agenda"] .calendar-wrapper { padding: 10px 6px; }
+  body[data-page="agenda"] .weekdays-header, body[data-page="agenda"] .days-grid { gap: 3px; }
+  body[data-page="agenda"] .weekdays-header span { font-size: 11px; }
+  body[data-page="agenda"] .day-btn { max-width: 40px; }
+  body[data-page="agenda"] .day-events { bottom: 4px; gap: 2px; }
+  body[data-page="agenda"] .day-dot { width: 4px; height: 4px; }
+
+  /* tabela vira cards (8 colunas) */
+  body[data-page="agenda"] .services-title { font-size: 20px; }
+  body[data-page="agenda"] .services-meta { width: 100%; justify-content: space-between; }
+}
+
+/* =====================================================================
+   REFORÇO DE RESPONSIVIDADE / NEUTRALIZAÇÃO DO BLOCO ANTIGO DO app.css
+   (estas regras vêm por último e usam a mesma especificidade base, então
+    garantem que nada do estilo legado [data-page=agenda] vaze)
+   ===================================================================== */
+
+/* contenção: ninguém estoura a largura do conteúdo */
+body[data-page="agenda"] .calendar-section,
+body[data-page="agenda"] .services-section,
+body[data-page="agenda"] .calendar-wrapper,
+body[data-page="agenda"] .table-wrapper { min-width: 0; max-width: 100%; box-sizing: border-box; }
+
+/* calendário: limpa resíduos do estilo antigo (barra de fundo, paddings, badge) */
+body[data-page="agenda"] .calendar-wrapper { overflow: hidden; box-shadow: none; backdrop-filter: none; }
+body[data-page="agenda"] .weekdays-header { background: transparent; border-bottom: 0; padding: 0; }
+body[data-page="agenda"] .weekdays-header span { padding: 0; font-family: inherit !important; }
+body[data-page="agenda"] .weekdays-header span:first-child,
+body[data-page="agenda"] .weekdays-header span:last-child { color: var(--text-dim, #6E7A91); }
+body[data-page="agenda"] .days-grid { padding: 0; gap: 6px; }
+body[data-page="agenda"] .day-cell { padding: 2px 0; }
+body[data-page="agenda"] .event-count { display: none; }   /* badge do estilo antigo */
+body[data-page="agenda"] .day-btn:active { transform: none; }
+
+/* (regras de contenção movidas para o card visual acima — nada de quebra de linha) */

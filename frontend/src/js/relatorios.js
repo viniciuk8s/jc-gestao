@@ -162,7 +162,7 @@
     box.innerHTML =
       '<div class="rep-doc">' +
         '<div class="rep-head">' +
-          '<div class="rep-brand"><img class="rep-logo" width="40" src="src/img/icone-laranja.png" alt=""><div><strong>JC · Elétrica &amp; Solar</strong><span>Registro de trabalho</span></div></div>' +
+          '<div class="rep-brand"><img class="rep-logo" width="40" src="src/img/icon-laranja" alt=""><div><strong>JC · Elétrica &amp; Solar</strong><span>Registro de trabalho</span></div></div>' +
           '<div class="rep-meta">Emitido em<b>' + fmtDateBR(new Date().toISOString().slice(0, 10)) + '</b>Referência: ' + esc(periodoLabel) + '</div>' +
         '</div>' +
         '<div class="rep-emp">' +
@@ -299,7 +299,7 @@
     box.innerHTML =
       '<div class="rep-doc">' +
         '<div class="rep-head">' +
-          '<div class="rep-brand"><img class="rep-logo" width="40" src="src/img/icone-laranja.png" alt=""><div><strong>JC · Elétrica &amp; Solar</strong><span>Relatório de pagamentos</span></div></div>' +
+          '<div class="rep-brand"><img class="rep-logo" width="40" src="src/img/icon-laranja" alt=""><div><strong>JC · Elétrica &amp; Solar</strong><span>Relatório de pagamentos</span></div></div>' +
           '<div class="rep-meta">Emitido em<b>' + fmtDateBR(new Date().toISOString().slice(0, 10)) + '</b>Referência: ' + esc(periodoLabel) + '</div>' +
         '</div>' +
         '<div class="rep-emp">' +
@@ -462,7 +462,7 @@
     box.innerHTML =
       '<div class="rep-doc">' +
         '<div class="rep-head">' +
-          '<div class="rep-brand"><div><strong>JC · Elétrica &amp; Solar</strong><span>Relatório financeiro</span></div></div>' +
+          '<div class="rep-brand"><img class="rep-logo" width="40" src="src/img/icon-laranja" alt=""><div><strong>JC · Elétrica &amp; Solar</strong><span>Relatório financeiro</span></div></div>' +
           '<div class="rep-meta">Período<b>' + MESES[state.finMes] + ' / ' + state.finAno + '</b>Emitido em ' + fmtDateBR(new Date().toISOString().slice(0, 10)) + '</div>' +
         '</div>' +
         '<div class="rep-summary">' +

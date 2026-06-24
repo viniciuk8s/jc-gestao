@@ -7,10 +7,7 @@
   <meta name="description" content="Agenda de serviços da JC Elétrica &amp; Solar.">
   <title>Agenda — JC Elétrica &amp; Solar</title>
 
-  <!-- Fontes -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 
   <!-- Ícones -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
@@ -19,70 +16,8 @@
   <!-- Módulos -->
   <link rel="stylesheet" href="src/css/app.css">
 
-  <!-- Estilo da agenda (embutido, a prova de cache): cabecalho + calendario responsivo -->
-  <style id="agenda-fix">
-    body[data-page="agenda"] .main-content { max-width: 1100px; margin: 0 auto; padding: 24px; box-sizing: border-box; }
-
-    /* ---- Cabecalho apresentativo ---- */
-    body[data-page="agenda"] .cal-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
-    body[data-page="agenda"] .cal-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--brand, #F97315); margin-bottom: 6px; }
-    body[data-page="agenda"] .cal-title { margin: 0; font-family: 'Syne','Sora',system-ui,sans-serif; font-size: 30px; line-height: 1.05; font-weight: 800; letter-spacing: -.01em; color: var(--heading, #F6F8FC); }
-    body[data-page="agenda"] .services-title { font-family: 'Syne','Sora',system-ui,sans-serif; font-size: 20px; font-weight: 700; margin: 0; color: var(--heading, #F6F8FC); }
-
-    /* ---- Navegacao de mes ---- */
-    body[data-page="agenda"] .cal-nav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    body[data-page="agenda"] .cal-stepper { display: flex; align-items: center; gap: 6px; }
-    body[data-page="agenda"] .cal-today,
-    body[data-page="agenda"] .nav-btn,
-    body[data-page="agenda"] .cal-select {
-      height: 38px; border: 1px solid var(--line, rgba(255,255,255,.14)); border-radius: 8px;
-      background: rgba(255,255,255,.05); color: var(--text, #E8EDF5); font-size: 13.5px; font-family: inherit; cursor: pointer; padding: 0 12px;
-    }
-    body[data-page="agenda"] .nav-btn { width: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
-    body[data-page="agenda"] .cal-select { -webkit-appearance: none; appearance: none; padding-right: 28px; }
-    body[data-page="agenda"] .cal-today:hover,
-    body[data-page="agenda"] .nav-btn:hover { border-color: var(--brand, #F97315); color: var(--brand, #F97315); }
-
-    /* ---- Calendario: 7 colunas fluidas (cabe em qualquer largura) ---- */
-    body[data-page="agenda"] .calendar-section { margin-bottom: 28px; }
-    body[data-page="agenda"] .calendar-wrapper { width: 100%; box-sizing: border-box; }
-    body[data-page="agenda"] .weekdays-header,
-    body[data-page="agenda"] .days-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
-    body[data-page="agenda"] .weekdays-header { margin-bottom: 8px; }
-    body[data-page="agenda"] .weekdays-header span { text-align: center; font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--text-muted, #9AA6BC); }
-    body[data-page="agenda"] .day-cell { min-width: 0; }
-    body[data-page="agenda"] .day-btn {
-      position: relative; width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center;
-      border: 1px solid var(--line, rgba(255,255,255,.1)); border-radius: 8px; background: rgba(255,255,255,.04);
-      color: var(--text, #E8EDF5); font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; transition: border-color .15s, background .15s, color .15s;
-    }
-    body[data-page="agenda"] .day-btn:hover { border-color: var(--brand, #F97315); background: rgba(249,115,21,.12); }
-    body[data-page="agenda"] .day-cell.empty .day-btn { visibility: hidden; cursor: default; }
-    body[data-page="agenda"] .day-btn.today { border-color: var(--brand, #F97315); color: var(--brand, #F97315); font-weight: 800; }
-    body[data-page="agenda"] .day-btn.has-event { background: linear-gradient(180deg, #FB8C3C, #F97315 60%, #E8620A); color: #fff; border-color: transparent; }
-    body[data-page="agenda"] .event-count {
-      position: absolute; top: 3px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
-      background: #fff; color: #F97315; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; line-height: 1;
-    }
-
-    /* mantem o modal HTML antigo escondido (agora usamos o JC.modal) */
-    body[data-page="agenda"] #modal-overlay { display: none; }
-
-    /* ---- Responsivo ---- */
-    @media (max-width: 640px) {
-      body[data-page="agenda"] .main-content { padding: 16px; }
-      body[data-page="agenda"] .cal-head { margin-bottom: 16px; }
-      body[data-page="agenda"] .cal-title { font-size: 23px; }
-      body[data-page="agenda"] .cal-nav { width: 100%; flex-direction: column; align-items: stretch; }
-      body[data-page="agenda"] .cal-today { width: 100%; }
-      body[data-page="agenda"] .cal-stepper { width: 100%; }
-      body[data-page="agenda"] .cal-select.cal-year { flex: 0 0 auto; }
-      body[data-page="agenda"] .cal-select { flex: 1; min-width: 0; }
-      body[data-page="agenda"] .weekdays-header, body[data-page="agenda"] .days-grid { gap: 4px; }
-      body[data-page="agenda"] .day-btn { font-size: 13px; border-radius: 6px; }
-      body[data-page="agenda"] .weekdays-header span { font-size: 10px; }
-    }
-  </style>
+  <!-- Estilo + responsividade da agenda (arquivo dedicado, carregar depois do app.css) -->
+  <link rel="stylesheet" href="src/css/agenda.css">
 
 
   <!-- Supabase (CDN) + proteção de sessão -->
@@ -132,13 +67,13 @@
 
         <!-- Cabeçalho dos dias da semana -->
         <div class="weekdays-header">
-          <span>Dom</span>
-          <span>Seg</span>
-          <span>Ter</span>
-          <span>Qua</span>
-          <span>Qui</span>
-          <span>Sex</span>
-          <span>Sáb</span>
+          <span>dom.</span>
+          <span>seg.</span>
+          <span>ter.</span>
+          <span>qua.</span>
+          <span>qui.</span>
+          <span>sex.</span>
+          <span>sáb.</span>
         </div>
 
         <!-- Grade de dias -->
@@ -172,12 +107,13 @@
               <th>Horário</th>
               <th class="num">Valor</th>
               <th>Status</th>
+              <th>Equipe</th>
               <th aria-label="Ações"></th>
             </tr>
           </thead>
           <tbody id="services-tbody">
             <tr class="empty-row" id="empty-row">
-              <td colspan="7">
+              <td colspan="8">
                 <div class="empty-state">
                   <div class="empty-icon"><i class="bi bi-calendar2-week" aria-hidden="true"></i></div>
                   <p>Nenhum serviço agendado ainda.<br>Clique em um dia no calendário para começar.</p>

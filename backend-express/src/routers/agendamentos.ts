@@ -17,9 +17,13 @@ r.get("/", async (req, res) => {
   if (q.de) conds.push(gte(agendamentos.data, q.de));
   if (q.ate) conds.push(lte(agendamentos.data, q.ate));
   if (q.status && q.status !== "todos") conds.push(eq(agendamentos.status, q.status));
-  const rows = await db.select().from(agendamentos)
+  const base = db.select().from(agendamentos)
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(asc(agendamentos.data), asc(agendamentos.horario));
+  let qb = base.$dynamic();
+  if (q.limit !== undefined) qb = qb.limit(q.limit);
+  if (q.offset !== undefined) qb = qb.offset(q.offset);
+  const rows = await qb;
   res.json(rows.map(out));
 });
 
