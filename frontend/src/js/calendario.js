@@ -22,7 +22,8 @@
     currentYear: new Date().getFullYear(),
     currentMonth: new Date().getMonth(),
     events: {},          // { "AAAA-MM-DD": [ {id, servico, cliente, horario, valor, status, obs, membros} ] }
-    emps: [],            // nomes de funcionários (API) para o seletor de colaboradores
+    emps: [],            // funcionários (API) p/ o seletor: [{nome, foto}]
+    empFoto: {},         // índice nome -> foto (dataURL/URL) p/ os avatares
   };
 
   /* ---------- Helpers de data ---------- */
@@ -110,14 +111,18 @@
     renderTable();
   }
 
-  // Funcionários cadastrados (para o seletor de colaboradores) — direto da API
+  // Funcionários cadastrados (para o seletor de colaboradores) — direto da API.
+  // Guarda nome + foto, e um índice por nome para resolver a foto na tabela.
   async function carregarFuncionarios() {
     try {
       const lista = await JC.api.funcionarios.list();
-      state.emps = (lista || []).map((f) => f.nome);
+      state.emps = (lista || []).map((f) => ({ nome: f.nome, foto: f.foto || '' }));
+      state.empFoto = {};
+      state.emps.forEach((e) => { state.empFoto[e.nome] = e.foto; });
     } catch (e) {
-      state.emps = []; // ainda sem funcionários cadastrados
+      state.emps = []; state.empFoto = {}; // ainda sem funcionários cadastrados
     }
+    renderTable(); // atualiza os avatares da tabela com as fotos quando os funcionários chegam
   }
 
   function findEvent(id) {
@@ -188,9 +193,13 @@
   function membrosAvatares(membros) {
     if (!membros || !membros.length) return '';
     const max = 5;
-    let html = membros.slice(0, max).map((m) =>
-      `<span class="svc-av" style="background:${colorFor(m.nome)}" title="${escHtml(m.nome)}">${escHtml(initials(m.nome))}</span>`
-    ).join('');
+    let html = membros.slice(0, max).map((m) => {
+      const foto = state.empFoto[m.nome];
+      if (foto) {
+        return `<span class="svc-av photo" style="background-image:url('${foto}')" title="${escHtml(m.nome)}"></span>`;
+      }
+      return `<span class="svc-av" style="background:${colorFor(m.nome)}" title="${escHtml(m.nome)}">${escHtml(initials(m.nome))}</span>`;
+    }).join('');
     if (membros.length > max) html += `<span class="svc-av more" title="mais ${membros.length - max}">+${membros.length - max}</span>`;
     return `<div class="svc-membros">${html}</div>`;
   }
@@ -319,7 +328,8 @@
         { id: 'status', label: 'Status', type: 'select', options: statusOpts,
           value: existente ? existente.status : (passado ? 'concluido' : 'confirmado') },
         { id: 'colaboradores', label: 'Colaboradores (funcionários)', type: 'chips', value: membrosSel,
-          options: emps.map((n) => ({ value: n, label: n, avatar: { color: colorFor(n), initials: initials(n) } })),
+          options: emps.map((e) => ({ value: e.nome, label: e.nome,
+            avatar: { color: colorFor(e.nome), initials: initials(e.nome), image: e.foto || '' } })),
           hint: emps.length ? 'Toque para incluir/remover quem vai no serviço.' : 'Cadastre funcionários para escolher aqui.' },
         { id: 'obs', label: 'Observações', type: 'textarea', rows: 3, value: existente ? existente.obs || '' : '', placeholder: 'Opcional' }
       ],
@@ -411,6 +421,7 @@
       '.btn-edit:hover{color:var(--brand,#F97315);background:rgba(249,115,21,.12);}' +
       '.svc-membros{display:flex;gap:3px;margin-top:5px;flex-wrap:wrap;}' +
       '.svc-av{width:20px;height:20px;border-radius:50%;font-size:9px;font-weight:700;color:#fff;display:inline-flex;align-items:center;justify-content:center;line-height:1;}' +
+      '.svc-av.photo{background-size:cover;background-position:center;}' +
       '.svc-av.more{background:#64748b;}';
     document.head.appendChild(st);
   }
