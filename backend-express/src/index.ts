@@ -13,6 +13,7 @@ import lancamentosRouter from "./routers/lancamentos";
 import pagamentosRouter from "./routers/pagamentos";
 import projetosRouter from "./routers/projetos";
 import relatoriosRouter from "./routers/relatorios";
+import clientesRouter from "./routers/clientes";
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use("/api/pagamentos", pagamentosRouter);
 app.use("/api/jornadas", jornadasRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/relatorios", relatoriosRouter);
+app.use("/api/clientes", clientesRouter);
 
 app.use(notFound);
 app.use(errorHandler);
