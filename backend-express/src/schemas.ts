@@ -126,6 +126,26 @@ export const jornadaQuery = z.object({
   limit, offset,
 });
 
+// ---------- Clientes ----------
+export const clienteCreate = z.object({
+  nome: z.string().trim().min(1, "Nome é obrigatório").max(120),
+  tipo: z.enum(["pessoa", "empresa"]).optional(),
+  documento: z.string().max(20).nullish(),
+  email: z.union([z.string().email("E-mail inválido").max(160), z.literal("")]).nullish(),
+  telefone: z.string().max(40).nullish(),
+  endereco: z.string().max(200).nullish(),
+  cidade: z.string().max(80).nullish(),
+  obs: z.string().nullish(),
+  status: z.enum(["ativo", "inativo"]).optional(),
+});
+export const clienteUpdate = clienteCreate.partial();
+export const clienteQuery = z.object({
+  q: z.string().optional(),
+  status: z.string().optional(),
+  limit, offset,
+});
+export type ClienteInput = z.infer<typeof clienteCreate>;
+
 // Tipos de entrada
 export type FuncionarioInput = z.infer<typeof funcionarioCreate>;
 export type JornadaInput = z.infer<typeof jornadaCreate>;
