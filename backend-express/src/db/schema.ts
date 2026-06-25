@@ -34,8 +34,6 @@ export const clientes = pgTable("clientes", {
   status: varchar("status", { length: 20 }).default("ativo"),  // ativo | inativo
   createdAt: timestamp("created_at").defaultNow(),
 });
-export type Cliente = typeof clientes.$inferSelect;
-export type NovoCliente = typeof clientes.$inferInsert;
 
 export const lancamentos = pgTable("lancamentos", {
   id: serial("id").primaryKey(),
@@ -52,8 +50,8 @@ export const lancamentos = pgTable("lancamentos", {
 export const projetos = pgTable("projetos", {
   id: serial("id").primaryKey(),
   nome: varchar("nome", { length: 160 }).notNull(),
-  clienteId: integer("cliente_id").references(() => clientes.id, { onDelete: "set null" }),
   cliente: varchar("cliente", { length: 120 }),
+  clienteId: integer("cliente_id").references(() => clientes.id, { onDelete: "set null" }),
   setor: varchar("setor", { length: 60 }),
   status: varchar("status", { length: 20 }).default("planejamento"), // planejamento | andamento | revisao | concluido
   prioridade: varchar("prioridade", { length: 10 }).default("media"), // alta | media | baixa
@@ -76,13 +74,22 @@ export const agendamentos = pgTable("agendamentos", {
   id: serial("id").primaryKey(),
   data: date("data", { mode: "string" }).notNull(),
   servico: varchar("servico", { length: 160 }).notNull(),
-  clienteId: integer("cliente_id").references(() => clientes.id, { onDelete: "set null" }),
   cliente: varchar("cliente", { length: 120 }),
+  clienteId: integer("cliente_id").references(() => clientes.id, { onDelete: "set null" }),
   horario: varchar("horario", { length: 10 }),
   valor: numeric("valor", { precision: 12, scale: 2 }).default("0"),
   status: varchar("status", { length: 12 }).default("confirmado"), // confirmado | pendente | cancelado
   obs: text("obs"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const agendamentoMembros = pgTable("agendamento_membros", {
+  id: serial("id").primaryKey(),
+  agendamentoId: integer("agendamento_id")
+    .notNull()
+    .references(() => agendamentos.id, { onDelete: "cascade" }),
+  nome: varchar("nome", { length: 120 }).notNull(),
+  tipo: varchar("tipo", { length: 20 }).default("funcionario"), // funcionario | terceiro
 });
 
 export const pagamentos = pgTable("pagamentos", {
@@ -114,6 +121,8 @@ export const jornadas = pgTable("jornadas", {
 // Tipos inferidos (linha lida / linha para inserir) — usados pelos routers.
 export type Funcionario = typeof funcionarios.$inferSelect;
 export type NovoFuncionario = typeof funcionarios.$inferInsert;
+export type Cliente = typeof clientes.$inferSelect;
+export type NovoCliente = typeof clientes.$inferInsert;
 export type Lancamento = typeof lancamentos.$inferSelect;
 export type NovoLancamento = typeof lancamentos.$inferInsert;
 export type Projeto = typeof projetos.$inferSelect;
@@ -121,6 +130,8 @@ export type NovoProjeto = typeof projetos.$inferInsert;
 export type ProjetoMembro = typeof projetoMembros.$inferSelect;
 export type Agendamento = typeof agendamentos.$inferSelect;
 export type NovoAgendamento = typeof agendamentos.$inferInsert;
+export type AgendamentoMembro = typeof agendamentoMembros.$inferSelect;
+export type NovoAgendamentoMembro = typeof agendamentoMembros.$inferInsert;
 export type Pagamento = typeof pagamentos.$inferSelect;
 export type NovoPagamento = typeof pagamentos.$inferInsert;
 export type Jornada = typeof jornadas.$inferSelect;
