@@ -21,6 +21,22 @@ export const funcionarios = pgTable("funcionarios", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const clientes = pgTable("clientes", {
+  id: serial("id").primaryKey(),
+  nome: varchar("nome", { length: 120 }).notNull(),
+  tipo: varchar("tipo", { length: 12 }).default("pessoa"),     // pessoa | empresa
+  documento: varchar("documento", { length: 20 }),             // CPF ou CNPJ
+  email: varchar("email", { length: 160 }),
+  telefone: varchar("telefone", { length: 40 }),
+  endereco: varchar("endereco", { length: 200 }),
+  cidade: varchar("cidade", { length: 80 }),
+  obs: text("obs"),
+  status: varchar("status", { length: 20 }).default("ativo"),  // ativo | inativo
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export type Cliente = typeof clientes.$inferSelect;
+export type NovoCliente = typeof clientes.$inferInsert;
+
 export const lancamentos = pgTable("lancamentos", {
   id: serial("id").primaryKey(),
   data: date("data", { mode: "string" }).notNull(),
@@ -36,6 +52,7 @@ export const lancamentos = pgTable("lancamentos", {
 export const projetos = pgTable("projetos", {
   id: serial("id").primaryKey(),
   nome: varchar("nome", { length: 160 }).notNull(),
+  clienteId: integer("cliente_id").references(() => clientes.id, { onDelete: "set null" }),
   cliente: varchar("cliente", { length: 120 }),
   setor: varchar("setor", { length: 60 }),
   status: varchar("status", { length: 20 }).default("planejamento"), // planejamento | andamento | revisao | concluido
@@ -59,6 +76,7 @@ export const agendamentos = pgTable("agendamentos", {
   id: serial("id").primaryKey(),
   data: date("data", { mode: "string" }).notNull(),
   servico: varchar("servico", { length: 160 }).notNull(),
+  clienteId: integer("cliente_id").references(() => clientes.id, { onDelete: "set null" }),
   cliente: varchar("cliente", { length: 120 }),
   horario: varchar("horario", { length: 10 }),
   valor: numeric("valor", { precision: 12, scale: 2 }).default("0"),
