@@ -73,6 +73,10 @@ export const projetoCreate = z.object({
 export const projetoUpdate = projetoCreate.partial();
 
 // ---------- Agendamentos ----------
+export const agendamentoMembroInput = z.object({
+  nome: z.string().trim().min(1).max(120),
+  tipo: z.enum(["funcionario", "terceiro"]).optional(),
+});
 export const agendamentoCreate = z.object({
   data: dateStr,
   servico: z.string().trim().min(1, "Serviço é obrigatório").max(160),
@@ -81,6 +85,7 @@ export const agendamentoCreate = z.object({
   valor: money.optional(),
   status: z.enum(["confirmado", "pendente", "cancelado", "concluido"]).optional(),
   obs: z.string().nullish(),
+  membros: z.array(agendamentoMembroInput).optional(),
 });
 export const agendamentoUpdate = agendamentoCreate.partial();
 export const agendamentoQuery = z.object({
@@ -126,6 +131,13 @@ export const jornadaQuery = z.object({
   limit, offset,
 });
 
+// Tipos de entrada
+export type FuncionarioInput = z.infer<typeof funcionarioCreate>;
+export type JornadaInput = z.infer<typeof jornadaCreate>;
+export type LancamentoInput = z.infer<typeof lancamentoCreate>;
+export type ProjetoInput = z.infer<typeof projetoCreate>;
+export type AgendamentoInput = z.infer<typeof agendamentoCreate>;
+export type PagamentoInput = z.infer<typeof pagamentoCreate>;
 // ---------- Clientes ----------
 export const clienteCreate = z.object({
   nome: z.string().trim().min(1, "Nome é obrigatório").max(120),
@@ -145,11 +157,3 @@ export const clienteQuery = z.object({
   limit, offset,
 });
 export type ClienteInput = z.infer<typeof clienteCreate>;
-
-// Tipos de entrada
-export type FuncionarioInput = z.infer<typeof funcionarioCreate>;
-export type JornadaInput = z.infer<typeof jornadaCreate>;
-export type LancamentoInput = z.infer<typeof lancamentoCreate>;
-export type ProjetoInput = z.infer<typeof projetoCreate>;
-export type AgendamentoInput = z.infer<typeof agendamentoCreate>;
-export type PagamentoInput = z.infer<typeof pagamentoCreate>;
